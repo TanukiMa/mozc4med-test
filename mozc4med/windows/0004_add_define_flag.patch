@@ -1,0 +1,12 @@
+--- a/.github/workflows/windows.yaml
++++ b/.github/workflows/windows.yaml
+@@ -73,7 +73,7 @@
+-          run: |
+-            bazelisk build --config oss_windows --config release_build package
++          run: |
++            bazelisk build --config oss_windows --config release_build --define=GOOGLE_JAPANESE_INPUT_BUILD=false package
+@@ -139,7 +139,7 @@
+-          run: |
+-            bazelisk build package --config oss_windows --config release_build --platforms=//:windows-arm64
++          run: |
++            bazelisk build package --config oss_windows --config release_build --define=GOOGLE_JAPANESE_INPUT_BUILD=false --platforms=//:windows-arm64

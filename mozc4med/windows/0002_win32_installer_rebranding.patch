@@ -1,0 +1,99 @@
+diff --git a/src/win32/installer/build_installer.py b/src/win32/installer/build_installer.py
+index ac31c2fac..4dde9ddd1 100644
+--- a/src/win32/installer/build_installer.py
++++ b/src/win32/installer/build_installer.py
+@@ -114,7 +114,7 @@ def run_wix4(args) -> None:
+         f'Software\\Google\\Update\\ClientState\\{{{omaha_guid}}}'
+     )
+   elif branding == 'Mozc':
+-    upgrade_code = 'DD94B570-B5E2-4100-9D42-61930C611D8A'
++    upgrade_code = '1157b660-5033-4cc4-9907-7d26ba1ada5c'
+ 
+   omaha_channel_type = 'dev' if version.IsDevChannel() else 'stable'
+   vs_configuration_name = 'Debug' if args.debug_build else 'Release'
+diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/installer_oss_64bit.wxs
+index 26c08b840..bb08fcbf8 100644
+--- a/src/win32/installer/installer_oss_64bit.wxs
++++ b/src/win32/installer/installer_oss_64bit.wxs
+@@ -54,8 +54,8 @@
+     http://msdn.microsoft.com/en-us/library/aa367850.aspx.
+     So we change the product ID for every new version.
+   -->
+-  <Package Name="Mozc" Language="1041" Codepage="932" Version="$(var.MozcVersion)" Manufacturer="Google LLC" UpgradeCode="$(var.UpgradeCode)" InstallerVersion="500">
+-    <SummaryInformation Keywords="Installer" Description="Mozc インストーラー" Manufacturer="Google LLC" Codepage="932" />
++  <Package Name="Mozc4med" Language="1041" Codepage="932" Version="$(var.MozcVersion)" Manufacturer="Mozc Project, MATANUKI" UpgradeCode="$(var.UpgradeCode)" InstallerVersion="500">
++    <SummaryInformation Keywords="Installer" Description="Mozc4med インストーラー" Manufacturer="Mozc Project, MATANUKI" Codepage="932" />
+ 
+     <!--
+        While obtaining the OS build number from the registry does not seem to be officially
+@@ -98,11 +98,11 @@
+     <Property Id="OS_BUILD_NUMBER" Secure="yes">
+       <RegistrySearch Id="CurrentBuildNumberValue" Type="raw" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber" />
+     </Property>
+-    <Launch Condition="(OS_BUILD_NUMBER AND (OS_BUILD_NUMBER &gt;= 10240)) OR (REMOVE=&quot;ALL&quot;)" Message="Mozc をインストールするには Windows 10 以降にアップグレードする必要があります。" />
++    <Launch Condition="(OS_BUILD_NUMBER AND (OS_BUILD_NUMBER &gt;= 10240)) OR (REMOVE=&quot;ALL&quot;)" Message="Mozc4med をインストールするには Windows 10 以降にアップグレードする必要があります。" />
+ 
+     <!-- Check if the user have the administrative privileges. -->
+-    <Launch Condition="Privileged" Message="Mozc をインストールするには管理者権限が必要です。" />
+-    <Media Id="1" Cabinet="Mozc.cab" EmbedCab="yes" CompressionLevel="high" />
++    <Launch Condition="Privileged" Message="Mozc4med をインストールするには管理者権限が必要です。" />
++    <Media Id="1" Cabinet="Mozc4med.cab" EmbedCab="yes" CompressionLevel="high" />
+ 
+     <?if $(var.MozcTIP64ArmPath) == "" and $(var.MozcTIP64XPath) == "" ?>
+       <!--
+@@ -133,10 +133,10 @@
+     </Upgrade>
+ 
+     <UI>
+-      <Error Id="4000" Message="新しいバージョンの Mozc が既にインストールされています。" />
++      <Error Id="4000" Message="新しいバージョンの Mozc4med が既にインストールされています。" />
+     </UI>
+ 
+-    <Feature Id="MozcInstall" Title="Mozc" Level="1">
++    <Feature Id="MozcInstall" Title="Mozc4med" Level="1">
+       <ComponentRef Id="MozcTIP32" />
+       <ComponentRef Id="MozcTIP64" />
+       <?if $(var.MozcTIP64ArmPath) != "" and $(var.MozcTIP64XPath) != "" ?>
+@@ -238,7 +238,7 @@
+     </InstallExecuteSequence>
+ 
+     <StandardDirectory Id="ProgramFilesFolder">
+-      <Directory Id="MozcDir" Name="Mozc">
++      <Directory Id="MozcDir" Name="Mozc4med">
+         <Component Id="MozcConverter">
+           <File Id="mozc_server.exe" Name="mozc_server.exe" DiskId="1" Checksum="yes" Source="$(var.MozcServer64Path)" Vital="yes" />
+         </Component>
+@@ -269,13 +269,13 @@
+         </Component>
+         <Component Id="MozcTIP32" Permanent="no" Bitness="always32">
+           <File Id="mozc_tip32.dll" Name="mozc_tip32.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP32Path)" Vital="yes">
+-            <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc" Id="10A67BC8-22FA-4A59-90DC-2546652C56BF" />
++            <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc4med" Id="611b3b7d-1dae-4d4e-bd79-33192804156d" />
+           </File>
+         </Component>
+         <Component Id="MozcTIP64" Permanent="no" Bitness="always64">
+           <File Id="mozc_tip64.dll" Name="mozc_tip64.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP64Path)" Vital="yes">
+             <?if $(var.MozcTIP64ArmPath) == "" and $(var.MozcTIP64XPath) == "" ?>
+-              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc" Id="10A67BC8-22FA-4A59-90DC-2546652C56BF" />
++              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc4med" Id="611b3b7d-1dae-4d4e-bd79-33192804156d" />
+             <?endif?>
+           </File>
+         </Component>
+@@ -285,7 +285,7 @@
+           </Component>
+           <Component Id="MozcTIP64X" Permanent="no" Bitness="always64">
+             <File Id="mozc_tip64x.dll" Name="mozc_tip64x.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP64XPath)" Vital="yes">
+-              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc" Id="10A67BC8-22FA-4A59-90DC-2546652C56BF" />
++              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc4med" Id="611b3b7d-1dae-4d4e-bd79-33192804156d" />
+             </File>
+           </Component>
+         <?endif?>
+@@ -384,7 +384,7 @@
+       mozc_renderer.exe automatically after user logon.
+     -->
+     <Component Id="PrelaunchProcesses" Directory="TARGETDIR">
+-      <RegistryValue Id="RunBroker" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="Mozc Prelauncher" Action="write" Type="string" Value="&quot;[MozcDir]mozc_broker.exe&quot; --mode=prelaunch_processes" />
++      <RegistryValue Id="RunBroker" Root="HKLM" Key="Software\Microsoft\Windows\CurrentVersion\Run" Name="Mozc4med Prelauncher" Action="write" Type="string" Value="&quot;[MozcDir]mozc_broker.exe&quot; --mode=prelaunch_processes" />
+     </Component>
+   </Package>
+ </Wix>
