@@ -1,4 +1,4 @@
-name: CI for Windows
+name: CI for Windows Mozc4med
 # https://github.com/google/mozc/blob/master/docs/build_mozc_in_windows.md
 
 # Run manually.
