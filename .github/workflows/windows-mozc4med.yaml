@@ -88,6 +88,7 @@ jobs:
           path: src/bazel-bin/win32/installer/Mozc4med.msi
           if-no-files-found: warn
 
+
   build_arm64:
     # https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
     runs-on: windows-2025
@@ -161,6 +162,7 @@ jobs:
           name: Mozc4med_arm.msi
           path: src/bazel-bin/win32/installer/Mozc4med.msi
           if-no-files-found: warn
+
 
   test:
     # https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
