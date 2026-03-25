@@ -85,7 +85,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Mozc4med_x64.msi
-          path: src/bazel-bin/win32/installer/Mozc4med_x64.msi
+          path: src/bazel-bin/win32/installer/Mozc4med.msi
           if-no-files-found: warn
 
   build_arm64:
@@ -159,7 +159,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: Mozc4med_arm.msi
-          path: src/bazel-bin/win32/installer/Mozc4med_arm.msi
+          path: src/bazel-bin/win32/installer/Mozc4med.msi
           if-no-files-found: warn
 
   test:
