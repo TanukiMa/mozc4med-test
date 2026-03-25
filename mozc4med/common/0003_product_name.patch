@@ -1,0 +1,7 @@
+diff --git a/src/base/const.h b/src/base/const.h
+index 0000000..1111111 100644
+--- a/src/base/const.h
++++ b/src/base/const.h
+@@
+-#define kProductPrefix "Mozc"
++#define kProductPrefix "Mozc4med"
