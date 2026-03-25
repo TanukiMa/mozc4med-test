@@ -7,11 +7,7 @@ index fbd3a3455..7ec742102 100644
  _WXS_FILE = ":installer_oss_64bit.wxs" if BRANDING == "Mozc" else ":installer_64bit.wxs"
 
 -_MSI_FILE = "Mozc64.msi" if BRANDING == "Mozc" else "GoogleJapaneseInput64.msi"
-+_MSI_FILE = select({
-+    "@platforms//cpu:x86_64": "Mozc4med_x64.msi" if BRANDING == "Mozc" else "GoogleJapaneseInput64_x64.msi",
-+    "@platforms//cpu:arm64": "Mozc4med_arm.msi" if BRANDING == "Mozc" else "GoogleJapaneseInput64_arm.msi",
-+    "//conditions:default": "Mozc4med_unknown.msi" if BRANDING == "Mozc" else "GoogleJapaneseInput_unknown.msi",
-+})
++_MSI_FILE = "Mozc4med.msi" if BRANDING == "Mozc" else "GoogleJapaneseInput64.msi"
 
  genrule(
      name = "installer",
