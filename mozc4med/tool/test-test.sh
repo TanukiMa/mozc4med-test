@@ -8,6 +8,8 @@
 set -euo pipefail   # abort on errors, undefined variables, and failed pipelines
 IFS=$'\n\t'
 
+cd src
+
 # ----------------------------------------------------------------
 # 1️⃣  Git configuration (local to this repo – does not affect global config)
 # ----------------------------------------------------------------
