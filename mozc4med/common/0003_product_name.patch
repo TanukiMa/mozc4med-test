@@ -3,5 +3,10 @@ index 0000000..1111111 100644
 --- a/src/base/const.h
 +++ b/src/base/const.h
 @@
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+ inline constexpr char kProductNameInEnglish[] = "Mozc";
 -#define kProductPrefix "Mozc"
 +#define kProductPrefix "Mozc4med"
+
+ // The prefix that the version‑rewriter adds to the version string.
+ inline constexpr char kVersionRewriterVersionPrefix[] = kProductPrefix "-";
