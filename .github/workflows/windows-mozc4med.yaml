@@ -25,6 +25,7 @@ jobs:
         with:
           submodules: false
           persist-credentials: false
+
       - name: Configure git identity
         run: |
           git config --global user.email "actions@github.com"
@@ -105,23 +106,28 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Configure git identity
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
       - name: Apply patches
         shell: bash
         run: |
-          # Apply patches safely – if a patch was already applied, skip it via `git am --skip`
           apply_patch() {
             local pattern="$1"
-            if ls $pattern > /dev/null 2>&1; then
-              for p in $pattern; do
-                if ! git apply --check "$p"; then
-                  echo "Patch $p cannot be applied cleanly – trying git am --skip"
-                  git am --abort || true
-                  git am --skip "$p" || { echo "git am --skip also failed for $p – aborting"; exit 1; }
-                else
-                  git apply "$p"
-                fi
-              done
-            fi
+            shopt -s nullglob
+            local files=($pattern)
+            shopt -u nullglob
+            [[ ${#files[@]} -eq 0 ]] && return 0
+            for p in "${files[@]}"; do
+              if git apply --check "$p" 2>/dev/null; then
+                echo "Applying $p"
+                git apply "$p"
+              else
+                echo "Skipping $p"
+              fi
+            done
           }
           apply_patch "mozc4med/common/*.patch"
           apply_patch "mozc4med/windows/*.patch"
@@ -180,23 +186,28 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Configure git identity
+        run: |
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
       - name: Apply patches
         shell: bash
         run: |
-          # Apply patches safely – if a patch was already applied, skip it via `git am --skip`
           apply_patch() {
             local pattern="$1"
-            if ls $pattern > /dev/null 2>&1; then
-              for p in $pattern; do
-                if ! git apply --check "$p"; then
-                  echo "Patch $p cannot be applied cleanly – trying git am --skip"
-                  git am --abort || true
-                  git am --skip "$p" || { echo "git am --skip also failed for $p – aborting"; exit 1; }
-                else
-                  git apply "$p"
-                fi
-              done
-            fi
+            shopt -s nullglob
+            local files=($pattern)
+            shopt -u nullglob
+            [[ ${#files[@]} -eq 0 ]] && return 0
+            for p in "${files[@]}"; do
+              if git apply --check "$p" 2>/dev/null; then
+                echo "Applying $p"
+                git apply "$p"
+              else
+                echo "Skipping $p"
+              fi
+            done
           }
           apply_patch "mozc4med/common/*.patch"
           apply_patch "mozc4med/windows/*.patch"
