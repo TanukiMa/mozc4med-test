@@ -52,7 +52,7 @@ Write-Host "Running tests …"
 & bazelisk test //... `
     --config oss_windows `
     -c dbg `
-    --build_tests_only
+    --build_tests_only --verbose_failures
 
 # ------------------------------------------------------------
 # 6️⃣  Finish
