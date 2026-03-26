@@ -1,0 +1,13 @@
+diff --git a/src/unix/ibus/path_util.cc b/src/unix/ibus/path_util.cc
+index 0000000..1111111 100644
+--- a/src/unix/ibus/path_util.cc
++++ b/src/unix/ibus/path_util.cc
+@@
+-#ifndef MOZC_IBUS_INSTALL_DIR
+-#define MOZC_IBUS_INSTALL_DIR "/usr/share/ibus-mozc"
+-#endif  // MOZC_IBUS_INSTALL_DIR
++#ifndef MOZC_IBUS_INSTALL_DIR
++// Rebranded install directory for Mozc4med.
++// Keeps Mozc and Mozc4med side‑by‑side on Linux.
++#define MOZC_IBUS_INSTALL_DIR "/usr/share/ibus-mozc4med"
++#endif  // MOZC_IBUS_INSTALL_DIR
