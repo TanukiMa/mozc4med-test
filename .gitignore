@@ -1,3 +1,4 @@
+.envrc
 nohup.out
 # log
 *.log
