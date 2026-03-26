@@ -49,9 +49,9 @@ python3 build_tools/update_deps.py   # Add `--cache_only` if you only want the c
 # 5️⃣  Run the test suite
 # ------------------------------------------------------------
 Write-Host "Running tests …"
-& bazelisk test //... \
-    --config oss_windows \
-    -c dbg \
+& bazelisk test //... `
+    --config oss_windows `
+    -c dbg `
     --build_tests_only
 
 # ------------------------------------------------------------
