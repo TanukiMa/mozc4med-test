@@ -43,7 +43,7 @@ Apply-Patch "mozc4med/windows/*.patch"
 # 4️⃣  Install / update third‑party dependencies
 # ------------------------------------------------------------
 Write-Host "Installing/updating third‑party dependencies …"
-python3 build_tools/update_deps.py   # Add `--cache_only` if you only want the cache
+python build_tools/update_deps.py   # Add `--cache_only` if you only want the cache
 
 # ------------------------------------------------------------
 # 5️⃣  Run the test suite
