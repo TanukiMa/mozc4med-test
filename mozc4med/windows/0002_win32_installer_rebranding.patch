@@ -3,10 +3,9 @@ Touch-Files: src/win32/installer/build_installer.py, src/win32/installer/install
 Scope: installer
 
 diff --git a/src/win32/installer/build_installer.py b/src/win32/installer/build_installer.py
-index ac31c2fac..4dde9ddd1 100644
 --- a/src/win32/installer/build_installer.py
 +++ b/src/win32/installer/build_installer.py
-@@ -114,7 +114,7 @@ def run_wix4(args) -> None:
+@@ -114,7 +114,7 @@
          f'Software\\Google\\Update\\ClientState\\{{{omaha_guid}}}'
      )
    elif branding == 'Mozc':
@@ -16,7 +15,6 @@ index ac31c2fac..4dde9ddd1 100644
    omaha_channel_type = 'dev' if version.IsDevChannel() else 'stable'
    vs_configuration_name = 'Debug' if args.debug_build else 'Release'
 diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/installer_oss_64bit.wxs
-index 26c08b840..bb08fcbf8 100644
 --- a/src/win32/installer/installer_oss_64bit.wxs
 +++ b/src/win32/installer/installer_oss_64bit.wxs
 @@ -54,8 +54,8 @@
