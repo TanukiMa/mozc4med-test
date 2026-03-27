@@ -67,6 +67,24 @@ Every hunk MUST use the complete unified diff format. Incomplete headers cause `
 - **Read the target file with exact line numbers BEFORE generating any patch**
 - Prefer small, focused hunks over large ones
 
+### 3.6 Patch Conflict Prevention (Mandatory)
+To prevent patch-to-patch conflicts, all patch authors MUST follow these rules:
+- **Single Responsibility per Patch**: One patch must contain one logical change only. Do not mix unrelated edits.
+- **No Overlapping Hunks Across Patches**: The same target file region (same or adjacent hunk scope) MUST NOT be edited by multiple patches in the same category sequence.
+- **Stable Ordered Series**: Patch index order is authoritative. Do not reorder existing indices once published. Add new changes using the next index.
+- **Patch Header Metadata Required**: Every `.patch` file MUST include a plain-text header block with:
+  - `Depends-On:` (e.g., `Depends-On: 0003_common_terms.patch` or `Depends-On: none`)
+  - `Touch-Files:` (comma-separated relative paths)
+  - `Scope:` (e.g., `ui`, `installer`, `branding-string`, `build-metadata`)
+- **File Ownership in a Series**: In one category (`common/`, `windows/`, etc.), one target file should be primarily owned by one patch whenever possible. If split is unavoidable, split by clearly separated non-adjacent regions.
+- **Minimal Context Drift**: Keep hunks small and avoid large surrounding context blocks to reduce rebase fragility.
+
+#### CI Validation for Conflict Detection
+- CI MUST execute `git apply --check` **one patch at a time in index order**, not only as a wildcard batch.
+- CI MUST fail immediately on the first failed patch and print the patch filename.
+- CI SHOULD validate `Touch-Files` overlap within each category and fail when duplicate ownership is detected, except explicitly declared dependency chains.
+- Apply step MUST run only after all ordered `--check` validations pass.
+
 ## 4. Development Phases
 
 ### Phase 1: Infrastructure & UI/Installer Branding (Current)
@@ -91,4 +109,3 @@ Every hunk MUST use the complete unified diff format. Incomplete headers cause `
 ## 5. Debugging Protocol
 1. User provides Fail Logs via `gh run view --log-failed` (cleaned).
 2. Gemini analyzes logs and proposes fixes to the specific `.patch` file or the workflow YAML.
-

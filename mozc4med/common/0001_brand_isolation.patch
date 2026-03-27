@@ -1,3 +1,7 @@
+Depends-On: none
+Touch-Files: src/base/const.h
+Scope: path-isolation
+
 diff --git a/src/base/const.h b/src/base/const.h
 index 1217cc6ea..f07392542 100644
 --- a/src/base/const.h

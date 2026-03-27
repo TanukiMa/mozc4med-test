@@ -26,6 +26,10 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Validate and apply patches
+        run: |
+          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/mac
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -67,6 +71,10 @@ jobs:
         with:
           submodules: false
           persist-credentials: false
+
+      - name: Validate and apply patches
+        run: |
+          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/mac
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
@@ -110,6 +118,10 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Validate and apply patches
+        run: |
+          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/mac
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -152,6 +164,10 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Validate and apply patches
+        run: |
+          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/mac
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -183,6 +199,10 @@ jobs:
         with:
           submodules: false
           persist-credentials: false
+
+      - name: Validate and apply patches
+        run: |
+          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/mac
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5

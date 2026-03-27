@@ -27,6 +27,10 @@ jobs:
           submodules: false
           persist-credentials: false
 
+      - name: Validate and apply patches
+        run: |
+          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/lint
+
       - name: Run
         working-directory: ./src
         run: |

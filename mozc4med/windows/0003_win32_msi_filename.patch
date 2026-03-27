@@ -1,3 +1,7 @@
+Depends-On: 0002_win32_installer_rebranding.patch
+Touch-Files: src/win32/installer/BUILD.bazel
+Scope: installer
+
 diff --git a/src/win32/installer/BUILD.bazel b/src/win32/installer/BUILD.bazel
 --- a/src/win32/installer/BUILD.bazel
 +++ b/src/win32/installer/BUILD.bazel

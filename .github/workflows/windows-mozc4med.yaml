@@ -31,26 +31,10 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Apply patches
+      - name: Validate and apply patches
         shell: bash
         run: |
-          apply_patch() {
-            local pattern="$1"
-            shopt -s nullglob
-            local files=($pattern)
-            shopt -u nullglob
-            [[ ${#files[@]} -eq 0 ]] && return 0
-            for p in "${files[@]}"; do
-              if git apply --check "$p" 2>/dev/null; then
-                echo "Applying $p"
-                git apply "$p"
-              else
-                echo "Skipping $p"
-              fi
-            done
-          }
-          apply_patch "mozc4med/common/*.patch"
-          apply_patch "mozc4med/windows/*.patch"
+          python .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/windows
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
@@ -111,26 +95,10 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Apply patches
+      - name: Validate and apply patches
         shell: bash
         run: |
-          apply_patch() {
-            local pattern="$1"
-            shopt -s nullglob
-            local files=($pattern)
-            shopt -u nullglob
-            [[ ${#files[@]} -eq 0 ]] && return 0
-            for p in "${files[@]}"; do
-              if git apply --check "$p" 2>/dev/null; then
-                echo "Applying $p"
-                git apply "$p"
-              else
-                echo "Skipping $p"
-              fi
-            done
-          }
-          apply_patch "mozc4med/common/*.patch"
-          apply_patch "mozc4med/windows/*.patch"
+          python .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/windows
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
@@ -191,26 +159,10 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Apply patches
+      - name: Validate and apply patches
         shell: bash
         run: |
-          apply_patch() {
-            local pattern="$1"
-            shopt -s nullglob
-            local files=($pattern)
-            shopt -u nullglob
-            [[ ${#files[@]} -eq 0 ]] && return 0
-            for p in "${files[@]}"; do
-              if git apply --check "$p" 2>/dev/null; then
-                echo "Applying $p"
-                git apply "$p"
-              else
-                echo "Skipping $p"
-              fi
-            done
-          }
-          apply_patch "mozc4med/common/*.patch"
-          apply_patch "mozc4med/windows/*.patch"
+          python .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/windows
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
@@ -253,26 +205,10 @@ jobs:
           git config --global user.email "actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      - name: Apply patches
+      - name: Validate and apply patches
         shell: bash
         run: |
-          apply_patch() {
-            local pattern="$1"
-            shopt -s nullglob
-            local files=($pattern)
-            shopt -u nullglob
-            [[ ${#files[@]} -eq 0 ]] && return 0
-            for p in "${files[@]}"; do
-              if git apply --check "$p" 2>/dev/null; then
-                echo "Applying $p"
-                git apply "$p"
-              else
-                echo "Skipping $p"
-              fi
-            done
-          }
-          apply_patch "mozc4med/common/*.patch"
-          apply_patch "mozc4med/windows/*.patch"
+          python .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/windows
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5

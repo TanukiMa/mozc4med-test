@@ -1,3 +1,7 @@
+Depends-On: 0001_win32_resource_template.patch
+Touch-Files: src/win32/installer/build_installer.py, src/win32/installer/installer_oss_64bit.wxs
+Scope: installer
+
 diff --git a/src/win32/installer/build_installer.py b/src/win32/installer/build_installer.py
 index ac31c2fac..4dde9ddd1 100644
 --- a/src/win32/installer/build_installer.py

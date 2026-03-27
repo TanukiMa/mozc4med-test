@@ -1,3 +1,7 @@
+Depends-On: 0001_brand_isolation.patch
+Touch-Files: src/base/system_util.cc
+Scope: path-isolation
+
 diff --git a/src/base/system_util.cc b/src/base/system_util.cc
 index 1ea93ffe6..e4b16f77d 100644
 --- a/src/base/system_util.cc

@@ -1,3 +1,7 @@
+Depends-On: 0002_path_isolation.patch
+Touch-Files: src/rewriter/version_rewriter_test.cc
+Scope: test-adjustment
+
 diff --git a/src/rewriter/version_rewriter_test.cc b/src/rewriter/version_rewriter_test.cc
 index 40ad...9e73 100644
 --- a/src/rewriter/version_rewriter_test.cc

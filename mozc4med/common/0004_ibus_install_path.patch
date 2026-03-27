@@ -1,3 +1,7 @@
+Depends-On: 0003_version_rewriter_test.patch
+Touch-Files: src/unix/ibus/path_util.cc
+Scope: path-isolation
+
 diff --git a/src/unix/ibus/path_util.cc b/src/unix/ibus/path_util.cc
 index 0000000..1111111 100644
 --- a/src/unix/ibus/path_util.cc

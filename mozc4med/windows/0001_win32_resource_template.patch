@@ -1,3 +1,7 @@
+Depends-On: none
+Touch-Files: src/build_tools/mozc_win32_resource_template.rc
+Scope: branding-string
+
 diff --git a/src/build_tools/mozc_win32_resource_template.rc b/src/build_tools/mozc_win32_resource_template.rc
 index deec83422..7f12ed07e 100644
 --- a/src/build_tools/mozc_win32_resource_template.rc
