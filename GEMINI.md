@@ -36,6 +36,37 @@ To ensure patches are compatible with GitHub Actions runners and the `git apply`
   - **Infrastructure**: The CI/CD pipeline MUST execute `git apply --check` for ALL patches before actual application. If the check fails, the build must terminate immediately.
   - **Patch Creation**: When Gemini proposes a patch, it must conceptually or via available tools verify that the patch can be applied with `--check` against the current source state.
 
+#### Hunk Header Format (MANDATORY)
+Every hunk MUST use the complete unified diff format. Incomplete headers cause `git apply` to fail immediately.
+
+**CORRECT:**
+```diff
+--- a/src/base/const.h
++++ b/src/base/const.h
+@@ -10,6 +10,7 @@
+ #include <string>
+ 
++static const int kVersion = 2;
+ static const char kName[] = "Mozc";
+```
+
+**WRONG (never output this):**
+```diff
+--- a/src/base/const.h
++++ b/src/base/const.h
+@@
++static const int kVersion = 2;
+```
+
+#### Hunk Header Rules
+- Format: `@@ -<old_start>,<old_count> +<new_start>,<new_count> @@`
+- `old_count` = context lines + removed lines
+- `new_count` = context lines + added lines
+- Always include **3 lines of unchanged context** before and after each change
+- Line numbers MUST reflect the **actual current state** of the file
+- **Read the target file with exact line numbers BEFORE generating any patch**
+- Prefer small, focused hunks over large ones
+
 ## 4. Development Phases
 
 ### Phase 1: Infrastructure & UI/Installer Branding (Current)
