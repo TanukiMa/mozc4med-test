@@ -28,7 +28,7 @@ jobs:
 
       - name: Validate and apply patches
         run: |
-          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/linux
+          python3 mozc4med/tool/validate_and_apply_patches.py mozc4med/common mozc4med/linux
 
       - name: Setup
         run: |
@@ -64,7 +64,7 @@ jobs:
 
       - name: Validate and apply patches
         run: |
-          python3 .github/scripts/validate_and_apply_patches.py mozc4med/common mozc4med/linux
+          python3 mozc4med/tool/validate_and_apply_patches.py mozc4med/common mozc4med/linux
 
       - name: Setup
         run: |
