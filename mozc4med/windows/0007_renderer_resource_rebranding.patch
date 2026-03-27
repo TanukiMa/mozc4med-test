@@ -1,0 +1,17 @@
+Depends-On: 0006_cache_service_resource_rebranding.patch
+Touch-Files: src/renderer/win32/mozc_renderer.rc
+Scope: ui
+
+diff --git a/src/renderer/win32/mozc_renderer.rc b/src/renderer/win32/mozc_renderer.rc
+index ae780c411..6131cdd0e 100644
+--- a/src/renderer/win32/mozc_renderer.rc
++++ b/src/renderer/win32/mozc_renderer.rc
+@@ -53,7 +53,7 @@ IDB_FOOTER_LOGO_COLOR_200  BITMAP    "data/images/win/candidate_window_logo_PBGR
+   #if defined(GOOGLE_JAPANESE_INPUT_BUILD)
+     #define MOZC_RES_FILE_DESCRIPTION "Google 日本語入力 レンダラー"
+   #elif defined(MOZC_BUILD)
+-    #define MOZC_RES_FILE_DESCRIPTION "Mozc Renderer"
++    #define MOZC_RES_FILE_DESCRIPTION "Mozc4med Renderer"
+   #endif
+ #endif
+ #ifndef MOZC_RES_FILETYPE
