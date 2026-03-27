@@ -2,11 +2,13 @@ diff --git a/src/base/const.h b/src/base/const.h
 index 0000000..1111111 100644
 --- a/src/base/const.h
 +++ b/src/base/const.h
-@@
+@@ -36,7 +36,7 @@
+ #define kProductPrefix "GoogleJapaneseInput"
  #else  // GOOGLE_JAPANESE_INPUT_BUILD
  inline constexpr char kProductNameInEnglish[] = "Mozc";
 -#define kProductPrefix "Mozc"
 +#define kProductPrefix "Mozc4med"
-
- // The prefix that the version‑rewriter adds to the version string.
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+-
++
  inline constexpr char kVersionRewriterVersionPrefix[] = kProductPrefix "-";

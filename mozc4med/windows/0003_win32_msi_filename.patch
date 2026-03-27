@@ -1,8 +1,7 @@
 diff --git a/src/win32/installer/BUILD.bazel b/src/win32/installer/BUILD.bazel
-index 48152c9..17b7076 100644
 --- a/src/win32/installer/BUILD.bazel
 +++ b/src/win32/installer/BUILD.bazel
-@@ -63,7 +63,7 @@ config_setting(
+@@ -63,7 +63,7 @@
  
  _WXS_FILE = ":installer_oss_64bit.wxs" if BRANDING == "Mozc" else ":installer_64bit.wxs"
  

@@ -1,9 +1,8 @@
 diff --git a/src/rewriter/version_rewriter_test.cc b/src/rewriter/version_rewriter_test.cc
-index 0000000..1111111 100644
+index 40ad...9e73 100644
 --- a/src/rewriter/version_rewriter_test.cc
 +++ b/src/rewriter/version_rewriter_test.cc
-@@
- #ifdef GOOGLE_JAPANESE_INPUT_BUILD
+@@ -109,6 +109,7 @@
    constexpr absl::string_view kVersionPrefixExpected = "GoogleJapaneseInput-";
    constexpr absl::string_view kVersionPrefixUnexpected = "Mozc-";
  #else   // GOOGLE_JAPANESE_INPUT_BUILD
