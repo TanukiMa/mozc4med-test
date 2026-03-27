@@ -70,7 +70,7 @@ jobs:
         run: |
           bazelisk build --config oss_windows --config release_build package
 
-      - name: upload Mozc64_x64.msi
+      - name: upload Mozc4med_x64.msi
         uses: actions/upload-artifact@v6
         with:
           name: Mozc4med_x64.msi
@@ -134,7 +134,7 @@ jobs:
         run: |
           bazelisk build package --config oss_windows --config release_build --platforms=//:windows-arm64
 
-      - name: upload Mozc64_arm64.msi
+      - name: upload Mozc4med_arm64.msi
         uses: actions/upload-artifact@v6
         with:
           name: Mozc4med_arm.msi
