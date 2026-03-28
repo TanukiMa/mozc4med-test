@@ -1,0 +1,39 @@
+Depends-On: 0008_windows_guid_refresh.patch, 0002_win32_installer_rebranding.patch
+Touch-Files: src/base/const.h, src/win32/installer/installer_oss_64bit.wxs
+Scope: coexistence-registry
+
+diff --git a/src/base/const.h b/src/base/const.h
+index f073925..34be272 100644
+--- a/src/base/const.h
++++ b/src/base/const.h
+@@ -109,7 +109,7 @@ inline constexpr char kMozcBroker[] = "mozc_broker.exe";
+ inline constexpr char kMozcTool[] = "mozc_tool.exe";
+ inline constexpr char kMozcRenderer[] = "mozc_renderer.exe";
+ inline constexpr char kMozcCacheServiceExeName[] = "mozc_cache_service.exe";
+-inline constexpr wchar_t kMozcCacheServiceName[] = L"MozcCacheService";
++inline constexpr wchar_t kMozcCacheServiceName[] = L"Mozc4medCacheService";
+ inline constexpr wchar_t kMessageReceiverMessageName[] =
+     L"mozc4med.renderer.message";
+ inline constexpr wchar_t kMessageReceiverClassName[] = L"mozc4med.renderer.window";
+diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/installer_oss_64bit.wxs
+index bb08fcb..a247f6e 100644
+--- a/src/win32/installer/installer_oss_64bit.wxs
++++ b/src/win32/installer/installer_oss_64bit.wxs
+@@ -257,7 +257,7 @@
+             |mozc::kMozcCacheServiceName| defined in base/const.h.
+             TODO(yukawa): Share these parameters. http://b/2357270
+           -->
+-          <ServiceInstall Id="MozcCacheService" Name="MozcCacheService" DisplayName="@[#mozc_cache_service.exe],-100" Description="@[#mozc_cache_service.exe],-101" Type="ownProcess" Start="auto" ErrorControl="normal" />
++          <ServiceInstall Id="MozcCacheService" Name="Mozc4medCacheService" DisplayName="@[#mozc_cache_service.exe],-100" Description="@[#mozc_cache_service.exe],-101" Type="ownProcess" Start="auto" ErrorControl="normal" />
+           <!--
+             The following entry which stops our cache service both on
+             installation and uninstallation should be the first entry in
+@@ -265,7 +265,7 @@
+             recognise that the specified service will be stopped during the
+             instalaltion.  See http://b/2440272 for details.
+           -->
+-          <ServiceControl Id="StopMozcCacheService" Name="MozcCacheService" Stop="both" Remove="uninstall" Wait="yes" />
++          <ServiceControl Id="StopMozcCacheService" Name="Mozc4medCacheService" Stop="both" Remove="uninstall" Wait="yes" />
+         </Component>
+         <Component Id="MozcTIP32" Permanent="no" Bitness="always32">
+           <File Id="mozc_tip32.dll" Name="mozc_tip32.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP32Path)" Vital="yes">

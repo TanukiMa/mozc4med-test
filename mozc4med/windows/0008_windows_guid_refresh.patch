@@ -1,0 +1,250 @@
+Depends-On: 0007_renderer_resource_rebranding.patch
+Touch-Files: src/base/system_util.cc, src/win32/base/tsf_profile.cc, src/win32/tip/tip_text_service.cc, src/win32/tip/tip_lang_bar.cc, src/win32/tip/tip_ui_element_delegate.cc, src/win32/tip/tip_display_attributes.cc, src/win32/tip/tip_lang_bar_menu.h
+Scope: coexistence-guid
+
+diff --git a/src/base/system_util.cc b/src/base/system_util.cc
+index 1ea93ffe6..17eaf6621 100644
+--- a/src/base/system_util.cc
++++ b/src/base/system_util.cc
+@@ -403,7 +403,7 @@ constexpr wchar_t kMozcTipClsid[] =
+ #ifdef GOOGLE_JAPANESE_INPUT_BUILD
+     L"{D5A86FD5-5308-47EA-AD16-9C4EB160EC3C}"
+ #else   // GOOGLE_JAPANESE_INPUT_BUILD
+-    L"{10A67BC8-22FA-4A59-90DC-2546652C56BF}"
++    L"{611B3B7D-1DAE-4D4E-BD79-33192804156D}"
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+     L"\\InprocServer32";
+ 
+diff --git a/src/win32/base/tsf_profile.cc b/src/win32/base/tsf_profile.cc
+index d647a3bfc..7ecac2103 100644
+--- a/src/win32/base/tsf_profile.cc
++++ b/src/win32/base/tsf_profile.cc
+@@ -54,19 +54,19 @@ static const GUID kGoogleJapaneseInputProfile = {
+ 
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+-// {10A67BC8-22FA-4A59-90DC-2546652C56BF}
++// {611B3B7D-1DAE-4D4E-BD79-33192804156D}
+ static const GUID kMozcTextService = {
+-    0x10a67bc8,
+-    0x22fa,
+-    0x4a59,
+-    {0x90, 0xdc, 0x25, 0x46, 0x65, 0x2c, 0x56, 0xbf}};
++    0x611b3b7d,
++    0x1dae,
++    0x4d4e,
++    {0xbd, 0x79, 0x33, 0x19, 0x28, 0x04, 0x15, 0x6d}};
+ 
+-// {186F700C-71CF-43FE-A00E-AACB1D9E6D3D}
++// {A7A5D1D0-7C0E-44E1-9B11-2F6B36D31C12}
+ static const GUID kMozcProfile = {
+-    0x186f700c,
+-    0x71cf,
+-    0x43fe,
+-    {0xa0, 0x0e, 0xaa, 0xcb, 0x1d, 0x9e, 0x6d, 0x3d}};
++    0xa7a5d1d0,
++    0x7c0e,
++    0x44e1,
++    {0x9b, 0x11, 0x2f, 0x6b, 0x36, 0xd3, 0x1c, 0x12}};
+ 
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+diff --git a/src/win32/tip/tip_display_attributes.cc b/src/win32/tip/tip_display_attributes.cc
+index 45af53f26..75574d88c 100644
+--- a/src/win32/tip/tip_display_attributes.cc
++++ b/src/win32/tip/tip_display_attributes.cc
+@@ -82,19 +82,19 @@ constexpr GUID kDisplayAttributeConverted = {
+ 
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+-// {84CA1E7E-3020-4D1C-8968-DDA372D1E067}
++// {E16D8A5B-95C7-48A2-B7E6-2D1A0F4C9B23}
+ constexpr GUID kDisplayAttributeInput = {
+-    0x84ca1e7e,
+-    0x3020,
+-    0x4d1c,
+-    {0x89, 0x68, 0xdd, 0xa3, 0x72, 0xd1, 0xe0, 0x67}};
++    0xe16d8a5b,
++    0x95c7,
++    0x48a2,
++    {0xb7, 0xe6, 0x2d, 0x1a, 0x0f, 0x4c, 0x9b, 0x23}};
+ 
+-// {8A4028E5-2DCD-4365-A5DC-71F67E797437}
++// {7C9E3D21-4A6B-4F9A-96E3-5B3D8C1F7A66}
+ constexpr GUID kDisplayAttributeConverted = {
+-    0x8a4028e5,
+-    0x2dcd,
+-    0x4365,
+-    {0xa5, 0xdc, 0x71, 0xf6, 0x7e, 0x79, 0x74, 0x37}};
++    0x7c9e3d21,
++    0x4a6b,
++    0x4f9a,
++    {0x96, 0xe3, 0x5b, 0x3d, 0x8c, 0x1f, 0x7a, 0x66}};
+ 
+ #endif  // !GOOGLE_JAPANESE_INPUT_BUILD
+ 
+diff --git a/src/win32/tip/tip_lang_bar.cc b/src/win32/tip/tip_lang_bar.cc
+index 485ce371f..89ff59b6e 100644
+--- a/src/win32/tip/tip_lang_bar.cc
++++ b/src/win32/tip/tip_lang_bar.cc
+@@ -83,26 +83,26 @@ constexpr GUID kTipLangBarItem_HelpMenu = {
+ 
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+-// {FC8E2486-F5BA-4863-91C3-8D166B454604}
++// {C4C6E5A2-6E0F-4302-8A60-2B4BB98D2A11}
+ constexpr GUID kTipLangBarItem_Button = {
+-    0xfc8e2486,
+-    0xf5ba,
+-    0x4863,
+-    {0x91, 0xc3, 0x8d, 0x16, 0x6b, 0x45, 0x46, 0x4}};
++    0xc4c6e5a2,
++    0x6e0f,
++    0x4302,
++    {0x8a, 0x60, 0x2b, 0x4b, 0xb9, 0x8d, 0x2a, 0x11}};
+ 
+-// {1BA637CA-7521-4F21-B51E-6516271A9FE3}
++// {5D5B7F9E-9B0A-4D2E-921D-1A9EE1C6B2F4}
+ constexpr GUID kTipLangBarItem_ToolButton = {
+-    0x1ba637ca,
+-    0x7521,
+-    0x4f21,
+-    {0xb5, 0x1e, 0x65, 0x16, 0x27, 0x1a, 0x9f, 0xe3}};
++    0x5d5b7f9e,
++    0x9b0a,
++    0x4d2e,
++    {0x92, 0x1d, 0x1a, 0x9e, 0xe1, 0xc6, 0xb2, 0xf4}};
+ 
+-// {F78AD6B1-49D3-400E-8218-896F22A70011}
++// {1B8F9A73-3154-4E6A-A9D0-6B28E9DCC4A8}
+ constexpr GUID kTipLangBarItem_HelpMenu = {
+-    0xf78ad6b1,
+-    0x49d3,
+-    0x400e,
+-    {0x82, 0x18, 0x89, 0x6f, 0x22, 0xa7, 0x0, 0x11}};
++    0x1b8f9a73,
++    0x3154,
++    0x4e6a,
++    {0xa9, 0xd0, 0x6b, 0x28, 0xe9, 0xdc, 0xc4, 0xa8}};
+ 
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+diff --git a/src/win32/tip/tip_lang_bar_menu.h b/src/win32/tip/tip_lang_bar_menu.h
+index 615ac9758..285fb269c 100644
+--- a/src/win32/tip/tip_lang_bar_menu.h
++++ b/src/win32/tip/tip_lang_bar_menu.h
+@@ -60,8 +60,8 @@ namespace tsf {
+ #define IIDSTR_IMozcLangBarItem "C6057858-8A94-4B40-8C99-D1C4B4A0B9DB"
+ #define IIDSTR_IMozcLangBarToggleItem "72B4C4E3-B9F3-478A-B8A8-753AFF37EB94"
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+-#define IIDSTR_IMozcLangBarItem "75B2153A-504B-48C9-9257-BA8D60E523E6"
+-#define IIDSTR_IMozcLangBarToggleItem "9ABF0C3B-4AC6-4DED-9EF6-97E728852CF3"
++#define IIDSTR_IMozcLangBarItem "2E9C8D7A-1F54-42E8-9D62-6A9B8C7D5E31"
++#define IIDSTR_IMozcLangBarToggleItem "4B7E6C10-3D92-4F4B-8A71-C5D2E9F0412A"
+ #endif  // !GOOGLE_JAPANESE_INPUT_BUILD
+ 
+ class TipBarCallback;
+diff --git a/src/win32/tip/tip_text_service.cc b/src/win32/tip/tip_text_service.cc
+index 4ac041eae..9d3dff2e6 100644
+--- a/src/win32/tip/tip_text_service.cc
++++ b/src/win32/tip/tip_text_service.cc
+@@ -152,33 +152,33 @@ constexpr char kHelpUrl[] = "https://github.com/google/mozc";
+ constexpr wchar_t kTaskWindowClassName[] =
+     L"Mozc Immersive Task Message Window";
+ 
+-// {F16B7D92-84B0-4AC6-A35B-06EA77180A18}
++// {3E4B4BE2-CBCE-4F9D-9349-3F788A0C8D12}
+ constexpr GUID kTipPreservedKey_Kanji = {
+-    0xf16b7d92,
+-    0x84b0,
+-    0x4ac6,
+-    {0xa3, 0x5b, 0x6, 0xea, 0x77, 0x18, 0x0a, 0x18}};
++    0x3e4b4be2,
++    0xcbce,
++    0x4f9d,
++    {0x93, 0x49, 0x3f, 0x78, 0x8a, 0x0c, 0x8d, 0x12}};
+ 
+-// {80DAD291-1981-46FA-998D-B84D6C1BA02C}
++// {B6F0A11C-7E71-4E85-95CB-9F5653D4F6AE}
+ constexpr GUID kTipPreservedKey_F10 = {
+-    0x80dad291,
+-    0x1981,
+-    0x46fa,
+-    {0x99, 0x8d, 0xb8, 0x4d, 0x6c, 0x1b, 0xa0, 0x2c}};
++    0xb6f0a11c,
++    0x7e71,
++    0x4e85,
++    {0x95, 0xcb, 0x9f, 0x56, 0x53, 0xd4, 0xf6, 0xae}};
+ 
+-// {95571C08-B05A-4ABA-B038-F3DEAE532F91}
++// {D3F8E639-86A9-4E72-8F94-E1D6A2C4B917}
+ constexpr GUID kTipPreservedKey_Romaji = {
+-    0x95571c08,
+-    0xb05a,
+-    0x4aba,
+-    {0xb0, 0x38, 0xf3, 0xde, 0xae, 0x53, 0x2f, 0x91}};
++    0xd3f8e639,
++    0x86a9,
++    0x4e72,
++    {0x8f, 0x94, 0xe1, 0xd6, 0xa2, 0xc4, 0xb9, 0x17}};
+ 
+-// {ECFB2528-E7D2-4CA0-BBE4-32FE08C148F4}
++// {9E8C2B4A-17F1-4D6E-8D7A-6CC9D5F2413B}
+ constexpr GUID kTipFunctionProvider = {
+-    0xecfb2528,
+-    0xe7d2,
+-    0x4ca0,
+-    {0xbb, 0xe4, 0x32, 0xfe, 0x8, 0xc1, 0x48, 0xf4}};
++    0x9e8c2b4a,
++    0x17f1,
++    0x4d6e,
++    {0x8d, 0x7a, 0x6c, 0xc9, 0xd5, 0xf2, 0x41, 0x3b}};
+ 
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+diff --git a/src/win32/tip/tip_ui_element_delegate.cc b/src/win32/tip/tip_ui_element_delegate.cc
+index 21a7d51f1..9ab3428c6 100644
+--- a/src/win32/tip/tip_ui_element_delegate.cc
++++ b/src/win32/tip/tip_ui_element_delegate.cc
+@@ -109,27 +109,27 @@ constexpr GUID KGuidIndicatorWindow = {
+ 
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
+-// {AD2489FB-D4C4-4632-85A9-7F9F917AB0FD}
++// {6A0E7E3F-8E6B-4C6C-AC80-C3E14F2A8D11}
+ constexpr GUID KGuidNonobservableSuggestWindow = {
+-    0xad2489fb,
+-    0xd4c4,
+-    0x4632,
+-    {0x85, 0xa9, 0x7f, 0x9f, 0x91, 0x7a, 0xb0, 0xfd}};
++    0x6a0e7e3f,
++    0x8e6b,
++    0x4c6c,
++    {0xac, 0x80, 0xc3, 0xe1, 0x4f, 0x2a, 0x8d, 0x11}};
+ 
+-// {0E2D447F-9B4A-490C-9C4D-61A6A707BE26}
++// {A3C287F9-2D5E-4B8B-9B6E-0A4E7FD1C233}
+ constexpr GUID KGuidObservableSuggestWindow = {
+-    0xe2d447f, 0x9b4a, 0x490c, {0x9c, 0x4d, 0x61, 0xa6, 0xa7, 0x7, 0xbe, 0x26}};
++    0xa3c287f9, 0x2d5e, 0x4b8b, {0x9b, 0x6e, 0x0a, 0x4e, 0x7f, 0xd1, 0xc2, 0x33}};
+ 
+-// {ED70ECDE-C8AA-4170-96CC-0090DEA8AEC2}
++// {D74A1F20-1F4A-4C17-9D58-8E0AB7BC9120}
+ constexpr GUID KGuidCandidateWindow = {
+-    0xed70ecde,
+-    0xc8aa,
+-    0x4170,
+-    {0x96, 0xcc, 0x0, 0x90, 0xde, 0xa8, 0xae, 0xc2}};
++    0xd74a1f20,
++    0x1f4a,
++    0x4c17,
++    {0x9d, 0x58, 0x8e, 0x0a, 0xb7, 0xbc, 0x91, 0x20}};
+ 
+-// {0090BF80-5F33-41B1-843C-E3EC79ED25F9}
++// {F0B5D3C1-7A9E-4D50-8B2D-9C7EA4F81244}
+ constexpr GUID KGuidIndicatorWindow = {
+-    0x90bf80, 0x5f33, 0x41b1, {0x84, 0x3c, 0xe3, 0xec, 0x79, 0xed, 0x25, 0xf9}};
++    0xf0b5d3c1, 0x7a9e, 0x4d50, {0x8b, 0x2d, 0x9c, 0x7e, 0xa4, 0xf8, 0x12, 0x44}};
+ 
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+ 
