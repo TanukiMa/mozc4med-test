@@ -55,6 +55,12 @@ def run_git_apply(patch_path: str) -> None:
     subprocess.run(["git", "apply", patch_path], check=True)
 
 
+def run_git_apply_reverse(patch_path: str) -> None:
+    patch_name = os.path.basename(patch_path)
+    print(f"Reverting {patch_name} (check phase)")
+    subprocess.run(["git", "apply", "-R", patch_path], check=True)
+
+
 def main() -> int:
     if len(sys.argv) < 2:
         print("Usage: validate_and_apply_patches.py <patch_dir> [<patch_dir> ...]")
@@ -108,8 +114,15 @@ def main() -> int:
                 owners_by_file[touched_file] = patch_name
 
         print(f"Running ordered git apply --check in {patch_dir}")
-        for patch_path in patches:
-            run_git_apply_check(patch_path)
+        applied_for_check: List[str] = []
+        try:
+            for patch_path in patches:
+                run_git_apply_check(patch_path)
+                run_git_apply(patch_path)
+                applied_for_check.append(patch_path)
+        finally:
+            for patch_path in reversed(applied_for_check):
+                run_git_apply_reverse(patch_path)
 
     for patch_dir, patches in patch_series:
         print(f"Applying ordered patch series in {patch_dir}")
