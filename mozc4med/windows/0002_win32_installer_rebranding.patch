@@ -1,11 +1,11 @@
 Depends-On: 0001_win32_resource_template.patch
 Touch-Files: src/win32/installer/build_installer.py, src/win32/installer/installer_oss_64bit.wxs
 Scope: installer
-
 diff --git a/src/win32/installer/build_installer.py b/src/win32/installer/build_installer.py
+index 4bccad8c5..8b4270cc7 100644
 --- a/src/win32/installer/build_installer.py
 +++ b/src/win32/installer/build_installer.py
-@@ -114,7 +114,7 @@
+@@ -131,7 +131,7 @@ def run_wix4(args) -> None:
          f'Software\\Google\\Update\\ClientState\\{{{omaha_guid}}}'
      )
    elif branding == 'Mozc':
@@ -15,9 +15,10 @@ diff --git a/src/win32/installer/build_installer.py b/src/win32/installer/build_
    omaha_channel_type = 'dev' if version.IsDevChannel() else 'stable'
    vs_configuration_name = 'Debug' if args.debug_build else 'Release'
 diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/installer_oss_64bit.wxs
+index b3b308e60..c27a068c9 100644
 --- a/src/win32/installer/installer_oss_64bit.wxs
 +++ b/src/win32/installer/installer_oss_64bit.wxs
-@@ -54,8 +54,8 @@
+@@ -57,8 +57,8 @@
      http://msdn.microsoft.com/en-us/library/aa367850.aspx.
      So we change the product ID for every new version.
    -->
@@ -28,12 +29,12 @@ diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/i
  
      <!--
         While obtaining the OS build number from the registry does not seem to be officially
-@@ -98,11 +98,11 @@
+@@ -101,11 +101,11 @@
      <Property Id="OS_BUILD_NUMBER" Secure="yes">
        <RegistrySearch Id="CurrentBuildNumberValue" Type="raw" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion" Name="CurrentBuildNumber" />
      </Property>
--    <Launch Condition="(OS_BUILD_NUMBER AND (OS_BUILD_NUMBER &gt;= 10240)) OR (REMOVE=&quot;ALL&quot;)" Message="Mozc をインストールするには Windows 10 以降にアップグレードする必要があります。" />
-+    <Launch Condition="(OS_BUILD_NUMBER AND (OS_BUILD_NUMBER &gt;= 10240)) OR (REMOVE=&quot;ALL&quot;)" Message="Mozc4med をインストールするには Windows 10 以降にアップグレードする必要があります。" />
+-    <Launch Condition="(OS_BUILD_NUMBER AND (OS_BUILD_NUMBER &gt;= 17763)) OR (REMOVE=&quot;ALL&quot;)" Message="Mozc をインストールするには Windows 10 1809 以降にアップグレードする必要があります。" />
++    <Launch Condition="(OS_BUILD_NUMBER AND (OS_BUILD_NUMBER &gt;= 17763)) OR (REMOVE=&quot;ALL&quot;)" Message="Mozc4med をインストールするには Windows 10 1809 以降にアップグレードする必要があります。" />
  
      <!-- Check if the user have the administrative privileges. -->
 -    <Launch Condition="Privileged" Message="Mozc をインストールするには管理者権限が必要です。" />
@@ -41,9 +42,9 @@ diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/i
 +    <Launch Condition="Privileged" Message="Mozc4med をインストールするには管理者権限が必要です。" />
 +    <Media Id="1" Cabinet="Mozc4med.cab" EmbedCab="yes" CompressionLevel="high" />
  
-     <?if $(var.MozcTIP64ArmPath) == "" and $(var.MozcTIP64XPath) == "" ?>
+     <?if $(var.MozcTIP64ArmPath) == "" and $(var.MozcTIP64XPath) == "" and $(var.MozcUniversalInstaller) == "" ?>
        <!--
-@@ -133,10 +133,10 @@
+@@ -136,10 +136,10 @@
      </Upgrade>
  
      <UI>
@@ -56,7 +57,7 @@ diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/i
        <ComponentRef Id="MozcTIP32" />
        <ComponentRef Id="MozcTIP64" />
        <?if $(var.MozcTIP64ArmPath) != "" and $(var.MozcTIP64XPath) != "" ?>
-@@ -238,7 +238,7 @@
+@@ -241,7 +241,7 @@
      </InstallExecuteSequence>
  
      <StandardDirectory Id="ProgramFilesFolder">
@@ -65,32 +66,7 @@ diff --git a/src/win32/installer/installer_oss_64bit.wxs b/src/win32/installer/i
          <Component Id="MozcConverter">
            <File Id="mozc_server.exe" Name="mozc_server.exe" DiskId="1" Checksum="yes" Source="$(var.MozcServer64Path)" Vital="yes" />
          </Component>
-@@ -269,13 +269,13 @@
-         </Component>
-         <Component Id="MozcTIP32" Permanent="no" Bitness="always32">
-           <File Id="mozc_tip32.dll" Name="mozc_tip32.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP32Path)" Vital="yes">
--            <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc" Id="10A67BC8-22FA-4A59-90DC-2546652C56BF" />
-+            <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc4med" Id="611b3b7d-1dae-4d4e-bd79-33192804156d" />
-           </File>
-         </Component>
-         <Component Id="MozcTIP64" Permanent="no" Bitness="always64">
-           <File Id="mozc_tip64.dll" Name="mozc_tip64.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP64Path)" Vital="yes">
-             <?if $(var.MozcTIP64ArmPath) == "" and $(var.MozcTIP64XPath) == "" ?>
--              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc" Id="10A67BC8-22FA-4A59-90DC-2546652C56BF" />
-+              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc4med" Id="611b3b7d-1dae-4d4e-bd79-33192804156d" />
-             <?endif?>
-           </File>
-         </Component>
-@@ -285,7 +285,7 @@
-           </Component>
-           <Component Id="MozcTIP64X" Permanent="no" Bitness="always64">
-             <File Id="mozc_tip64x.dll" Name="mozc_tip64x.dll" DiskId="1" Checksum="yes" Source="$(var.MozcTIP64XPath)" Vital="yes">
--              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc" Id="10A67BC8-22FA-4A59-90DC-2546652C56BF" />
-+              <Class Context="InprocServer32" ThreadingModel="apartment" Description="Mozc4med" Id="611b3b7d-1dae-4d4e-bd79-33192804156d" />
-             </File>
-           </Component>
-         <?endif?>
-@@ -384,7 +384,7 @@
+@@ -379,7 +379,7 @@
        mozc_renderer.exe automatically after user logon.
      -->
      <Component Id="PrelaunchProcesses" Directory="TARGETDIR">

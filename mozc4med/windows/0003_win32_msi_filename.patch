@@ -1,16 +1,16 @@
 Depends-On: 0002_win32_installer_rebranding.patch
 Touch-Files: src/win32/installer/BUILD.bazel
 Scope: installer
-
 diff --git a/src/win32/installer/BUILD.bazel b/src/win32/installer/BUILD.bazel
+index 1c31b5159..defdfaed9 100644
 --- a/src/win32/installer/BUILD.bazel
 +++ b/src/win32/installer/BUILD.bazel
-@@ -63,7 +63,7 @@
+@@ -68,7 +68,7 @@ config_setting(
  
  _WXS_FILE = ":installer_oss_64bit.wxs" if BRANDING == "Mozc" else ":installer_64bit.wxs"
  
 -_MSI_FILE = "Mozc64.msi" if BRANDING == "Mozc" else "GoogleJapaneseInput64.msi"
 +_MSI_FILE = "Mozc4med.msi"
  
- genrule(
-     name = "installer",
+ selects.config_setting_group(
+     name = "build_arm64_binaries",
