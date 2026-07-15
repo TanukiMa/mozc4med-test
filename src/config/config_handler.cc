@@ -37,6 +37,7 @@
 #include <string>
 #include <utility>
 
+#include "absl/base/no_destructor.h"
 #include "absl/base/thread_annotations.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_format.h"
@@ -47,7 +48,6 @@
 #include "base/config_file_stream.h"
 #include "base/hash.h"
 #include "base/port.h"
-#include "base/singleton.h"
 #include "base/strings/assign.h"
 #include "base/system_util.h"
 #include "base/thread.h"
@@ -79,7 +79,7 @@ void AddCharacterFormRule(const absl::string_view group,
 bool GetPlatformSpecificDefaultEmojiSetting() {
   // Disable Unicode emoji conversion by default on specific platforms.
   bool use_emoji_conversion_default = true;
-  if constexpr (TargetIsAndroid()) {
+  if constexpr (port::IsAndroid()) {
     use_emoji_conversion_default = false;
   }
   return use_emoji_conversion_default;
@@ -187,7 +187,8 @@ class ConfigHandlerImpl final {
 };
 
 ConfigHandlerImpl* GetConfigHandlerImpl() {
-  return Singleton<ConfigHandlerImpl>::get();
+  static absl::NoDestructor<ConfigHandlerImpl> impl;
+  return impl.get();
 }
 
 std::shared_ptr<const Config> ConfigHandlerImpl::GetSharedConfig() const {
@@ -327,9 +328,9 @@ std::string ConfigHandler::GetConfigFileNameForTesting() {
 }
 
 Config::SessionKeymap ConfigHandler::GetDefaultKeyMap() {
-  if constexpr (TargetIsOSX()) {
+  if constexpr (port::IsMacos()) {
     return Config::KOTOERI;
-  } else if constexpr (TargetIsChromeOS()) {
+  } else if constexpr (port::IsChromeos()) {
     return Config::CHROMEOS;
   } else {
     return Config::MSIME;

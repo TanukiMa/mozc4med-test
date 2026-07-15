@@ -29,6 +29,7 @@
 
 #include "engine/modules.h"
 
+#include <array>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -39,6 +40,7 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "base/container/tuple.h"
 #include "converter/connector.h"
 #include "converter/segmenter.h"
 #include "data_manager/data_manager.h"
@@ -54,6 +56,7 @@
 #include "dictionary/user_pos.h"
 #include "engine/supplemental_model_interface.h"
 #include "prediction/suggestion_filter.h"
+#include "prediction/user_history_storage.h"
 
 
 using ::mozc::dictionary::DictionaryImpl;
@@ -91,8 +94,8 @@ absl::Status Modules::Init(std::unique_ptr<const DataManager> data_manager) {
   }
 
   if (!user_dictionary_) {
-    std::unique_ptr<UserPos> user_pos =
-        UserPos::CreateFromDataManager(*data_manager_);
+    auto user_pos =
+        make_unique_from_tuples<UserPos>(data_manager_->GetUserPosData());
     RETURN_IF_NULL(user_pos);
 
     user_dictionary_ =
@@ -111,8 +114,8 @@ absl::Status Modules::Init(std::unique_ptr<const DataManager> data_manager) {
     if (!sysdic.ok()) {
       return std::move(sysdic).status();
     }
-    auto value_dic = std::make_unique<ValueDictionary>(
-        *pos_matcher_, &(*sysdic)->value_trie());
+    auto value_dic = std::make_unique<ValueDictionary>(*pos_matcher_,
+                                                       (*sysdic)->value_trie());
     RETURN_IF_NULL(user_dictionary_);
     RETURN_IF_NULL(pos_matcher_);
     dictionary_ = std::make_unique<DictionaryImpl>(
@@ -122,22 +125,25 @@ absl::Status Modules::Init(std::unique_ptr<const DataManager> data_manager) {
   }
 
   if (!suffix_dictionary_) {
-    absl::string_view suffix_key_array_data, suffix_value_array_data;
-    absl::Span<const uint32_t> token_array;
-    data_manager_->GetSuffixDictionaryData(
-        &suffix_key_array_data, &suffix_value_array_data, &token_array);
-    suffix_dictionary_ = std::make_unique<SuffixDictionary>(
-        suffix_key_array_data, suffix_value_array_data, token_array);
+    suffix_dictionary_ = make_unique_from_tuples<SuffixDictionary>(
+        data_manager_->GetSuffixDictionaryData());
     RETURN_IF_NULL(suffix_dictionary_);
   }
 
-  auto status_or_connector = Connector::CreateFromDataManager(*data_manager_);
+  if (!user_history_storage_) {
+    user_history_storage_ = std::make_unique<prediction::UserHistoryStorage>();
+    RETURN_IF_NULL(user_history_storage_);
+  }
+
+  auto status_or_connector =
+      Connector::Create(data_manager_->GetConnectorData());
   if (!status_or_connector.ok()) {
     return std::move(status_or_connector).status();
   }
   connector_ = *std::move(status_or_connector);
 
-  segmenter_ = Segmenter::CreateFromDataManager(*data_manager_);
+  segmenter_ =
+      make_unique_from_tuples<Segmenter>(data_manager_->GetSegmenterData());
   RETURN_IF_NULL(segmenter_);
 
   pos_group_ = std::make_unique<PosGroup>(data_manager_->GetPosGroupData());
@@ -154,22 +160,17 @@ absl::Status Modules::Init(std::unique_ptr<const DataManager> data_manager) {
 
   if (!single_kanji_dictionary_) {
     single_kanji_dictionary_ =
-        std::make_unique<dictionary::SingleKanjiDictionary>(*data_manager_);
+        make_unique_from_tuples<dictionary::SingleKanjiDictionary>(
+            data_manager_->GetSingleKanjiRewriterData());
     RETURN_IF_NULL(single_kanji_dictionary_);
   }
 
-  absl::string_view zero_query_token_array_data;
-  absl::string_view zero_query_string_array_data;
-  absl::string_view zero_query_number_token_array_data;
-  absl::string_view zero_query_number_string_array_data;
-  data_manager_->GetZeroQueryData(&zero_query_token_array_data,
-                                  &zero_query_string_array_data,
-                                  &zero_query_number_token_array_data,
-                                  &zero_query_number_string_array_data);
-  zero_query_dict_.Init(zero_query_token_array_data,
-                        zero_query_string_array_data);
-  zero_query_number_dict_.Init(zero_query_number_token_array_data,
-                               zero_query_number_string_array_data);
+  // [zero_query_token_array_data,zero_query_string_array_data,
+  //  zero_query_number_token_array_data, zero_query_number_string_array_data]
+  const std::array<absl::string_view, 4> zero_query_data =
+      data_manager_->GetZeroQueryData();
+  zero_query_dict_.Init(zero_query_data[0], zero_query_data[1]);
+  zero_query_number_dict_.Init(zero_query_data[2], zero_query_data[3]);
 
   if (!supplemental_model_) {
     // `g_supplemental_model` is static and initialized only once
@@ -190,6 +191,7 @@ absl::Status Modules::Init(std::unique_ptr<const DataManager> data_manager) {
   RETURN_IF_NULL(suffix_dictionary_);
   RETURN_IF_NULL(pos_group_);
   RETURN_IF_NULL(single_kanji_dictionary_);
+  RETURN_IF_NULL(user_history_storage_);
   RETURN_IF_NULL(supplemental_model_);
 
   return absl::Status();

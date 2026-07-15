@@ -27,6 +27,8 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+load("@com_google_protobuf//bazel:cc_proto_library.bzl", "cc_proto_library")
+load("@com_google_protobuf//bazel:proto_library.bzl", "proto_library")
 load(
     "//:build_defs.bzl",
     "mozc_cc_library",
@@ -47,55 +49,27 @@ load("//build_tools:embed_file.bzl", "mozc_embed_file")
 package(default_visibility = ["//:__subpackages__"])
 
 mozc_cc_library(
-    name = "init_mozc_buildtool",
-    srcs = ["init_mozc.cc"],
-    hdrs = ["init_mozc.h"],
-    local_defines = ["MOZC_BUILDTOOL_BUILD"],
-    visibility = ["//:__subpackages__"],
-    deps = [
-        ":log_file",
-        ":system_util",
-        "@com_google_absl//absl/flags:flag",
-    ] + mozc_select(
-        android = ["//base"],
-        client = [
-            ":file_util",
-            "@com_google_absl//absl/flags:parse",
-        ],
-        default = ["//base"],
-        ios = ["//base"],
-        linux = ["//base"],
-        macos = ["//base"],
-        oss = [
-            ":file_util",
-            "@com_google_absl//absl/flags:parse",
-        ],
-        windows = ["//base"],
-    ),
-)
-
-mozc_cc_library(
     name = "init_mozc",
     srcs = ["init_mozc.cc"],
     hdrs = ["init_mozc.h"],
     visibility = ["//:__subpackages__"],
     deps = [
         ":log_file",
+        ":port",
+        ":system_util",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/strings:string_view",
     ] + mozc_select(
         android = ["//base"],
+        apple = ["//base"],
         client = [
             ":file_util",
-            ":system_util",
             "@com_google_absl//absl/flags:parse",
         ],
         default = ["//base"],
-        ios = ["//base"],
         linux = ["//base"],
-        macos = ["//base"],
         oss = [
             ":file_util",
-            ":system_util",
             "@com_google_absl//absl/flags:parse",
         ],
         windows = ["//base"],
@@ -186,31 +160,6 @@ mozc_cc_test(
 )
 
 mozc_cc_library(
-    name = "singleton",
-    srcs = ["singleton.cc"],
-    hdrs = ["singleton.h"],
-    visibility = ["//:__subpackages__"],
-    deps = [
-        "@com_google_absl//absl/base:core_headers",
-        "@com_google_absl//absl/base:no_destructor",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/synchronization",
-    ],
-)
-
-mozc_cc_test(
-    name = "singleton_test",
-    size = "small",
-    srcs = ["singleton_test.cc"],
-    deps = [
-        ":singleton",
-        ":thread",
-        "//testing:gunit_main",
-        "@com_google_absl//absl/time",
-    ],
-)
-
-mozc_cc_library(
     name = "hash",
     srcs = ["hash.cc"],
     hdrs = ["hash.h"],
@@ -235,7 +184,6 @@ mozc_cc_library(
     srcs = ["clock.cc"],
     hdrs = ["clock.h"],
     deps = [
-        ":singleton",
         "@com_google_absl//absl/time",
     ],
 )
@@ -310,7 +258,7 @@ mozc_cc_library(
     visibility = ["//:__subpackages__"],
     deps = [
         "//base/strings:pfchar",
-        "//base/strings:zstring_view",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -351,6 +299,7 @@ mozc_cc_library(
     visibility = ["//:__subpackages__"],
     deps = [
         ":util",
+        "//base/strings:unicode",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -362,6 +311,7 @@ mozc_cc_test(
     deps = [
         ":text_normalizer",
         "//testing:gunit_main",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -401,7 +351,7 @@ mozc_cc_library(
     ],
     deps = [
         ":util",
-        "//base/strings:zstring_view",
+        "//base/strings:pfchar",
         "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/cleanup",
         "@com_google_absl//absl/log",
@@ -439,10 +389,7 @@ mozc_cc_library(
     srcs = ["environ.cc"],
     hdrs = ["environ.h"],
     visibility = ["//:__subpackages__"],
-    deps = [
-        ":singleton",
-        "//base/strings:zstring_view",
-    ],
+    deps = ["@com_google_absl//absl/strings:string_view"],
 )
 
 mozc_cc_library(
@@ -450,7 +397,7 @@ mozc_cc_library(
     hdrs = ["environ_mock.h"],
     deps = [
         ":environ",
-        "//base/strings:zstring_view",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -463,12 +410,13 @@ mozc_cc_library(
         ":file_stream",
         ":mmap",
         ":port",
-        ":singleton",
-        "//base/strings:zstring_view",
+        "//base/strings:pfchar",
+        "@com_google_absl//absl/base",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:resize_and_overwrite",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:span",
     ] + mozc_select(
@@ -484,11 +432,11 @@ mozc_cc_library(
     hdrs = ["file_util_mock.h"],
     deps = [
         ":file_util",
-        "//base/strings:zstring_view",
         "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -526,18 +474,8 @@ mozc_cc_test(
 
 mozc_cc_library(
     name = "system_util",
-    # TODO(b/269889028): android_util and win_util have cyclic dependency
-    # between this library. Solve it and make them independent libraries.
-    srcs = ["system_util.cc"] +
-           mozc_select(
-               android = ["android_util.cc"],
-               windows = ["//base/win32:win_util_cc"],
-           ),
-    hdrs = ["system_util.h"] +
-           mozc_select(
-               android = ["android_util.h"],
-               windows = ["//base/win32:win_util_h"],
-           ),
+    srcs = ["system_util.cc"],
+    hdrs = ["system_util.h"],
     local_defines = mozc_select(
         linux = [
             'MOZC_DOCUMENT_DIR=\\"' + LINUX_MOZC_DOCUMENT_DIR + '\\"',
@@ -548,13 +486,12 @@ mozc_cc_library(
         ":const",
         ":environ",
         ":file_util",
-        ":singleton",
+        ":port",
         ":util",
-        "//base/strings:zstring_view",
-        "//bazel/win32:aux_ulib",  # win_util
         "//bazel/win32:imm32",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/container:fixed_array",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -562,12 +499,11 @@ mozc_cc_library(
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ] + mozc_select(
-        ios = ["//base/mac:mac_util"],
-        macos = ["//base/mac:mac_util"],
+        android = [":android_util"],
+        apple = ["//base/mac:mac_util"],
         windows = [
-            ":vlog",
             "//base/win32:wide_char",
-            "@com_microsoft_wil//:wil",
+            "//base/win32:win_util",
         ],
     ),
 )
@@ -586,6 +522,34 @@ mozc_cc_test(
 )
 
 mozc_cc_library(
+    name = "android_util",
+    srcs = ["android_util.cc"],
+    hdrs = ["android_util.h"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":util",
+        "@com_google_absl//absl/base:config",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+
+mozc_cc_test(
+    name = "android_util_test",
+    size = "small",
+    srcs = ["android_util_test.cc"],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":android_util",
+        ":port",
+        ":util",
+        "//testing:gunit_main",
+        "//testing:test_peer",
+    ],
+)
+
+mozc_cc_library(
     name = "process",
     srcs = ["process.cc"],
     hdrs = ["process.h"],
@@ -597,7 +561,7 @@ mozc_cc_library(
         ":file_util",
         ":system_util",
         ":vlog",
-        "//base/strings:zstring_view",
+        "//base/strings:pfchar",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/time",
@@ -619,17 +583,17 @@ mozc_cc_library(
     deps = [
         ":file_util",
         ":port",
-        ":singleton",
         ":system_util",
         ":util",
         ":vlog",
+        "//base/strings:pfchar",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
     ] + mozc_select(
         default = [
-            "//base/strings:zstring_view",
             "@com_google_absl//absl/container:flat_hash_map",
             "@com_google_absl//absl/status",
             "@com_google_absl//absl/status:statusor",
@@ -673,6 +637,7 @@ mozc_cc_library(
         windows = [
             "//base/win32:wide_char",
             "//base/win32:win_sandbox",
+            "@com_google_absl//absl/log:check",
             "@com_microsoft_wil//:wil",
         ],
     ),
@@ -705,16 +670,18 @@ mozc_cc_library(
     deps = [
         ":file_stream",
         ":file_util",
-        ":singleton",
         ":system_util",
-        "//base/strings:zstring_view",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
     ] + mozc_select(
-        windows = ["//base/win32:win_sandbox"],
+        windows = [
+            "//base/win32:win_sandbox",
+            "//base/win32:wide_char",
+        ],
     ),
 )
 
@@ -742,15 +709,16 @@ mozc_run_build_tool(
     outs = {
         "--output": "mozc_version.txt",
     },
-    args = ["--use_mozc_version_env"] + mozc_select(
-        android = ["--target_platform=Android"],
-        chromiumos = ["--target_platform=ChromeOS"],
-        default = ["--target_platform="],
-        linux = ["--target_platform=Linux"],
-        macos = ["--target_platform=Mac"],
-        wasm = ["--target_platform=Wasm"],
-        windows = ["--target_platform=Windows"],
-    ) + mozc_select_release_channel(
+    args = ["--use_mozc_version_env"] +
+           mozc_select(
+               android = ["--target_platform=Android"],
+               chromiumos = ["--target_platform=ChromeOS"],
+               default = ["--target_platform="],
+               linux = ["--target_platform=Linux"],
+               macos = ["--target_platform=Mac"],
+               wasm = ["--target_platform=Wasm"],
+               windows = ["--target_platform=Windows"],
+           ) + mozc_select_release_channel(
         dev = ["--channel=dev"],
         stable = ["--channel=stable"],
     ),
@@ -860,11 +828,11 @@ mozc_cc_library(
         ":mmap",
         ":obfuscator_support",
         ":random",
-        ":singleton",
         ":system_util",
         ":util",
         "//bazel/win32:crypt32",
         "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/base:core_headers",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
@@ -873,8 +841,7 @@ mozc_cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
     ] + mozc_select(
-        ios = ["//base/mac:mac_util"],
-        macos = ["//base/mac:mac_util"],
+        apple = ["//base/mac:mac_util"],
         windows = ["//base/win32:wide_char"],
     ),
 )
@@ -1098,7 +1065,12 @@ mozc_cc_test(
 mozc_cc_library(
     name = "bits",
     hdrs = ["bits.h"],
-    deps = ["@com_google_absl//absl/base:config"],
+    deps = [
+        "@com_google_absl//absl/base:config",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/types:span",
+    ],
 )
 
 mozc_cc_test(
@@ -1109,6 +1081,56 @@ mozc_cc_test(
         ":bits",
         "//testing:gunit_main",
         "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/strings:string_view",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+mozc_cc_library(
+    name = "protobuf_util",
+    srcs = ["protobuf_util.cc"],
+    hdrs = ["protobuf_util.h"],
+    tags = ["noandroid"],
+    target_compatible_with = mozc_select(
+        android = ["@platforms//:incompatible"],
+        default = [],
+        ios = ["@platforms//:incompatible"],
+        macos = [],
+    ),
+    visibility = ["//:__subpackages__"],
+    deps = [
+        "//base/protobuf:descriptor",
+        "//base/protobuf:message",
+        "@com_google_absl//absl/functional:function_ref",
+        "@com_google_absl//absl/strings:string_view",
+    ],
+)
+
+proto_library(
+    name = "protobuf_util_test_proto",
+    testonly = True,
+    srcs = ["protobuf_util_test.proto"],
+)
+
+cc_proto_library(
+    name = "protobuf_util_test_cc_proto",
+    testonly = True,
+    deps = [":protobuf_util_test_proto"],
+)
+
+mozc_cc_test(
+    name = "protobuf_util_test",
+    size = "small",
+    srcs = ["protobuf_util_test.cc"],
+    tags = ["noandroid"],
+    target_compatible_with = mozc_select(
+        android = ["@platforms//:incompatible"],
+        ios = ["@platforms//:incompatible"],
+    ),
+    deps = [
+        ":protobuf_util",
+        ":protobuf_util_test_cc_proto",
+        "//testing:gunit_main",
         "@com_google_absl//absl/strings:string_view",
     ],
 )

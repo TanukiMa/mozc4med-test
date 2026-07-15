@@ -448,7 +448,7 @@ void GetTransliterations(const Composition& composition,
 
 std::shared_ptr<const commands::Request> GetSharedDefaultRequest() {
   static const absl::NoDestructor<std::shared_ptr<const commands::Request>>
-      kRequest(new commands::Request);
+      kRequest(std::make_shared<commands::Request>());
   return *kRequest;
 }
 
@@ -1110,8 +1110,7 @@ void Composer::AutoSwitchMode() {
       GetTransliterator(transliteration::HALF_ASCII));
 
   const ModeSwitchingHandler::Rule mode_switching =
-      ModeSwitchingHandler::GetModeSwitchingHandler()->GetModeSwitchingRule(
-          key);
+      ModeSwitchingHandler::GetModeSwitchingRule(key);
 
   // |display_mode| affects the existing composition the user typed.
   switch (mode_switching.display_mode) {

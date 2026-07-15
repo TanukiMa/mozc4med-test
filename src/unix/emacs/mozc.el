@@ -345,7 +345,11 @@ EVENT is the last input event, which is usually passed by the command loop."
        ((mozc-protobuf-get output 'consumed)
         (let ((result (mozc-protobuf-get output 'result))
               (preedit (mozc-protobuf-get output 'preedit))
-              (candidates (mozc-protobuf-get output 'candidate-window)))
+              ;; Support both 'candidate-window (new) and 'candidates (old).
+              ;; 'candidates is also checked for backward compatibility with
+              ;; older versions of mozc_emacs_helper (see: #1424).
+              (candidates (or (mozc-protobuf-get output 'candidate-window)
+                              (mozc-protobuf-get output 'candidates))))
           (if (not (or result preedit))
               (mozc-clean-up-changes-on-buffer)  ; nothing to show
             (when result  ; Insert the result first.
@@ -639,7 +643,7 @@ In a word, this function is a fixed version of `posn-at-point'."
   "Return the y coordinate in POSITION.
 
 This function returns y offset from the top of the buffer area including
-the header line.  This definition could be changed in future.
+the header line and tab line.  This definition could be changed in future.
 
 Note: On Emacs 22 and 23, y offset, returned by `posn-at-point' and taken
 by `posn-at-x-y', is relative to the top of the buffer area including
@@ -648,15 +652,21 @@ However, on Emacs 24, y offset returned by `posn-at-point' is relative to
 the text area excluding the header line, while y offset taken by
 `posn-at-x-y' is relative to the buffer area including the header line.
 This asymmetry is by design according to GNU Emacs team.
+On Emacs 27, the tab line was added.  The tab line behaves like the header
+line on Emacs 24.
 
 This function fixes the asymmetry between them on Emacs 24 and later versions.
 This hack could be moved to mozc-posn-at-x-y in a future version."
   (let ((y (cdr (posn-x-y position))))
-    (if (or (null header-line-format) (<= emacs-major-version 23))
-        y
-      (+ y (or mozc-cached-header-line-height
-               (setq mozc-cached-header-line-height (mozc-header-line-height))
-               0)))))
+    (cond ((fboundp #'window-tab-line-height)
+           (+ y (window-tab-line-height) (window-header-line-height)))
+          ((or (null header-line-format) (<= emacs-major-version 23))
+           y)
+          (t
+           (+ y (or mozc-cached-header-line-height
+                    (setq mozc-cached-header-line-height
+                          (mozc-header-line-height))
+                    0))))))
 
 (defsubst mozc-window-width (&optional window)
   "Return the width of WINDOW in pixel.

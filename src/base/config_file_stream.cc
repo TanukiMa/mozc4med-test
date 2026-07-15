@@ -38,12 +38,11 @@
 #include <string>
 #include <utility>
 
-#include "base/strings/zstring_view.h"
-
 #ifdef _WIN32
 #include <windows.h>
 #endif  // _WIN32
 
+#include "absl/base/no_destructor.h"
 #include "absl/container/flat_hash_map.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
@@ -53,10 +52,10 @@
 #include "absl/strings/strip.h"
 #include "base/file_stream.h"
 #include "base/file_util.h"
-#include "base/singleton.h"
 #include "base/system_util.h"
 
 #ifdef _WIN32
+#include "base/win32/wide_char.h"
 #include "base/win32/win_sandbox.h"
 #endif  // _WIN32
 
@@ -85,8 +84,8 @@ class OnMemoryFileMap {
     return empty_string_;
   }
 
-  void set(absl::string_view key, zstring_view value) {
-    map_[key] = std::string(value.view());
+  void set(absl::string_view key, absl::string_view value) {
+    map_[key] = value;
   }
 
   void clear() { map_.clear(); }
@@ -95,12 +94,18 @@ class OnMemoryFileMap {
   absl::flat_hash_map<std::string, std::string> map_;
   const std::string empty_string_;
 };
+
+OnMemoryFileMap* GetOnMemoryFileMap() {
+  static absl::NoDestructor<OnMemoryFileMap> map;
+  return map.get();
+}
+
 }  // namespace
 
 std::unique_ptr<std::istream> ConfigFileStream::Open(
-    zstring_view filename, std::ios_base::openmode mode) {
+    absl::string_view filename, std::ios_base::openmode mode) {
   // system://foo.bar.txt
-  if (filename.view().starts_with(kSystemPrefix)) {
+  if (filename.starts_with(kSystemPrefix)) {
     absl::string_view new_filename = absl::StripPrefix(filename, kSystemPrefix);
     for (size_t i = 0; i < std::size(kFileData); ++i) {
       if (new_filename == kFileData[i].name) {
@@ -114,7 +119,7 @@ std::unique_ptr<std::istream> ConfigFileStream::Open(
       }
     }
     // user://foo.bar.txt
-  } else if (filename.view().starts_with(kUserPrefix)) {
+  } else if (filename.starts_with(kUserPrefix)) {
     const std::string new_filename =
         FileUtil::JoinPath(SystemUtil::GetUserProfileDirectory(),
                            absl::StripPrefix(filename, kUserPrefix));
@@ -125,7 +130,7 @@ std::unique_ptr<std::istream> ConfigFileStream::Open(
     }
     return nullptr;
     // file:///foo.map
-  } else if (filename.view().starts_with(kFilePrefix)) {
+  } else if (filename.starts_with(kFilePrefix)) {
     absl::string_view new_filename = absl::StripPrefix(filename, kFilePrefix);
     auto ifs =
         std::make_unique<InputFileStream>(std::string(new_filename), mode);
@@ -134,9 +139,9 @@ std::unique_ptr<std::istream> ConfigFileStream::Open(
       return ifs;
     }
     return nullptr;
-  } else if (filename.view().starts_with(kMemoryPrefix)) {
+  } else if (filename.starts_with(kMemoryPrefix)) {
     auto ifs = std::make_unique<std::istringstream>(
-        Singleton<OnMemoryFileMap>::get()->get(filename), mode);
+        GetOnMemoryFileMap()->get(filename), mode);
     CHECK(ifs);
     if (ifs->good()) {
       return ifs;
@@ -155,12 +160,12 @@ std::unique_ptr<std::istream> ConfigFileStream::Open(
   return nullptr;
 }
 
-bool ConfigFileStream::AtomicUpdate(zstring_view filename,
-                                    zstring_view new_binary_contens) {
-  if (filename.view().starts_with(kMemoryPrefix)) {
-    Singleton<OnMemoryFileMap>::get()->set(filename, new_binary_contens);
+bool ConfigFileStream::AtomicUpdate(absl::string_view filename,
+                                    absl::string_view new_binary_contens) {
+  if (filename.starts_with(kMemoryPrefix)) {
+    GetOnMemoryFileMap()->set(filename, new_binary_contens);
     return true;
-  } else if (filename->starts_with(kSystemPrefix)) {
+  } else if (filename.starts_with(kSystemPrefix)) {
     LOG(ERROR) << "Cannot update system:// files.";
     return false;
   }
@@ -218,9 +223,7 @@ std::string ConfigFileStream::GetFileName(absl::string_view filename) {
   return "";
 }
 
-void ConfigFileStream::ClearOnMemoryFiles() {
-  Singleton<OnMemoryFileMap>::get()->clear();
-}
+void ConfigFileStream::ClearOnMemoryFiles() { GetOnMemoryFileMap()->clear(); }
 
 #ifdef _WIN32
 // Check the file permission of "config1.db" if exists to ensure that

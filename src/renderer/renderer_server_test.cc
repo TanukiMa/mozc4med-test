@@ -76,6 +76,8 @@ class TestRenderer : public RendererInterface {
 
 class TestRendererServer : public RendererServer {
  public:
+  TestRendererServer() : RendererServer(true /* for_testing */) {}
+
   int StartMessageLoop() override { return 0; }
 
   // Not async for testing
@@ -90,13 +92,13 @@ class TestRendererServer : public RendererServer {
 class DummyRendererLauncher : public RendererLauncherInterface {
  public:
   void StartRenderer(
-      const std::string& name, const std::string& renderer_path,
+      absl::string_view name, absl::string_view renderer_path,
       bool disable_renderer_path_check,
       IPCClientFactoryInterface* ipc_client_factory_interface) override {
     LOG(INFO) << name << " " << renderer_path;
   }
 
-  bool ForceTerminateRenderer(const std::string& name) override { return true; }
+  bool ForceTerminateRenderer(absl::string_view name) override { return true; }
 
   void OnFatal(RendererErrorType type) override {
     LOG(ERROR) << static_cast<int>(type);
@@ -130,7 +132,7 @@ TEST_F(RendererServerTest, IPCTest) {
 
   DummyRendererLauncher launcher;
   std::unique_ptr<RendererClient> client = RendererClient::CreateForTesting(
-      &on_memory_client_factory, &launcher,
+      server->GetServiceName(), &on_memory_client_factory, &launcher,
       RendererClient::RendererPathCheckMode::DISABLED);
 
   commands::RendererCommand command;

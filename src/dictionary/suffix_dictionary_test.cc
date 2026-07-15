@@ -36,12 +36,12 @@
 
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
+#include "base/container/tuple.h"
 #include "data_manager/testing/mock_data_manager.h"
 #include "dictionary/dictionary_interface.h"
 #include "dictionary/dictionary_mock.h"
 #include "dictionary/dictionary_test_util.h"
 #include "dictionary/dictionary_token.h"
-#include "request/conversion_request.h"
 #include "testing/gmock.h"
 #include "testing/gunit.h"
 
@@ -55,18 +55,9 @@ using ::testing::Return;
 
 TEST(SuffixDictionaryTest, Callback) {
   // Test SuffixDictionary with mock data.
-  std::unique_ptr<const SuffixDictionary> dic;
-  ConversionRequest convreq;
-  {
-    const testing::MockDataManager manager;
-    absl::string_view key_array_data, value_arra_data;
-    absl::Span<const uint32_t> token_array;
-    manager.GetSuffixDictionaryData(&key_array_data, &value_arra_data,
-                                    &token_array);
-    dic = std::make_unique<SuffixDictionary>(key_array_data, value_arra_data,
-                                             token_array);
-    ASSERT_NE(nullptr, dic.get());
-  }
+  const testing::MockDataManager manager;
+  auto dic = make_unique_from_tuples<SuffixDictionary>(
+      manager.GetSuffixDictionaryData());
 
   MockCallback mock_callback;
   EXPECT_CALL(mock_callback, OnKey(_))
@@ -76,29 +67,20 @@ TEST(SuffixDictionaryTest, Callback) {
       .WillRepeatedly(Return(DictionaryInterface::Callback::TRAVERSE_CONTINUE));
   EXPECT_CALL(mock_callback, OnToken(_, _, _))
       .WillRepeatedly(Return(DictionaryInterface::Callback::TRAVERSE_CONTINUE));
-  dic->LookupPredictive("た", convreq, &mock_callback);
+  dic->LookupPredictive("た", &mock_callback);
 }
 
 TEST(SuffixDictionaryTest, LookupPredictive) {
   // Test SuffixDictionary with mock data.
-  std::unique_ptr<const SuffixDictionary> dic;
-  ConversionRequest convreq;
-  {
-    const testing::MockDataManager manager;
-    absl::string_view key_array_data, value_arra_data;
-    absl::Span<const uint32_t> token_array;
-    manager.GetSuffixDictionaryData(&key_array_data, &value_arra_data,
-                                    &token_array);
-    dic = std::make_unique<SuffixDictionary>(key_array_data, value_arra_data,
-                                             token_array);
-    ASSERT_NE(nullptr, dic.get());
-  }
+  const testing::MockDataManager manager;
+  auto dic = make_unique_from_tuples<SuffixDictionary>(
+      manager.GetSuffixDictionaryData());
 
   {
     // Lookup with empty key.  All tokens are looked up.  Here, just verify the
     // result is nonempty and each token has valid data.
     CollectTokenCallback callback;
-    dic->LookupPredictive("", convreq, &callback);
+    dic->LookupPredictive("", &callback);
     EXPECT_FALSE(callback.tokens().empty());
     for (size_t i = 0; i < callback.tokens().size(); ++i) {
       const Token& token = callback.tokens()[i];
@@ -113,7 +95,7 @@ TEST(SuffixDictionaryTest, LookupPredictive) {
     // Non-empty prefix.
     const std::string kPrefix = "た";
     CollectTokenCallback callback;
-    dic->LookupPredictive(kPrefix, convreq, &callback);
+    dic->LookupPredictive(kPrefix, &callback);
     EXPECT_FALSE(callback.tokens().empty());
     for (size_t i = 0; i < callback.tokens().size(); ++i) {
       const Token& token = callback.tokens()[i];

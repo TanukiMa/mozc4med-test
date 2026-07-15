@@ -36,6 +36,7 @@
 #include <utility>
 
 #include "absl/strings/string_view.h"
+#include "base/container/tuple.h"
 #include "base/util.h"
 #include "config/config_handler.h"
 #include "data_manager/testing/mock_data_manager.h"
@@ -48,6 +49,7 @@
 #include "dictionary/user_pos.h"
 #include "protocol/config.pb.h"
 #include "request/conversion_request.h"
+#include "request/options.h"
 #include "testing/gunit.h"
 
 namespace mozc {
@@ -73,10 +75,11 @@ std::unique_ptr<DictionaryData> CreateDictionaryData() {
           .Build()
           .value();
   auto val_dict = std::make_unique<ValueDictionary>(*ret->pos_matcher,
-                                                    &sys_dict->value_trie());
+                                                    sys_dict->value_trie());
 
-  std::unique_ptr<UserPos> user_pos =
-      UserPos::CreateFromDataManager(data_manager);
+  auto user_pos =
+      make_unique_from_tuples<UserPos>(data_manager.GetUserPosData());
+
   ret->user_dictionary = std::make_unique<dictionary::UserDictionary>(
       std::move(user_pos), *ret->pos_matcher);
   ret->dictionary = std::make_unique<DictionaryImpl>(
@@ -190,7 +193,7 @@ class DictionaryImplTest : public ::testing::Test {
   // Pair of DictionaryInterface's lookup method and query text.
   struct LookupMethodAndQuery {
     void (DictionaryInterface::*lookup_method)(
-        absl::string_view, const ConversionRequest&,
+        absl::string_view, const ConversionOptions&,
         DictionaryInterface::Callback*) const;
     const char* query;
   };
@@ -230,7 +233,8 @@ TEST_F(DictionaryImplTest, WordSuppressionTest) {
   const ConversionRequest convreq1 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckKeyValueExistenceCallback callback(kKey, kValue);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1.options(),
+                                     &callback);
     EXPECT_FALSE(callback.found());
   }
 
@@ -243,7 +247,8 @@ TEST_F(DictionaryImplTest, WordSuppressionTest) {
   const ConversionRequest convreq2 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckKeyValueExistenceCallback callback(kKey, kValue);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2.options(),
+                                     &callback);
     EXPECT_TRUE(callback.found());
   }
 }
@@ -267,7 +272,8 @@ TEST_F(DictionaryImplTest, DisableSpellingCorrectionTest) {
   const ConversionRequest convreq1 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckSpellingExistenceCallback callback(kKey, kValue);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1.options(),
+                                     &callback);
     EXPECT_TRUE(callback.found());
   }
 
@@ -276,7 +282,8 @@ TEST_F(DictionaryImplTest, DisableSpellingCorrectionTest) {
   const ConversionRequest convreq2 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckSpellingExistenceCallback callback(kKey, kValue);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2.options(),
+                                     &callback);
     EXPECT_FALSE(callback.found());
   }
 }
@@ -300,7 +307,8 @@ TEST_F(DictionaryImplTest, DisableZipCodeConversionTest) {
   const ConversionRequest convreq1 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckZipCodeExistenceCallback callback(kKey, kValue, *data->pos_matcher);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1.options(),
+                                     &callback);
     EXPECT_TRUE(callback.found());
   }
 
@@ -309,7 +317,8 @@ TEST_F(DictionaryImplTest, DisableZipCodeConversionTest) {
   const ConversionRequest convreq2 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckZipCodeExistenceCallback callback(kKey, kValue, *data->pos_matcher);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2.options(),
+                                     &callback);
     EXPECT_FALSE(callback.found());
   }
 }
@@ -332,7 +341,8 @@ TEST_F(DictionaryImplTest, DisableT13nConversionTest) {
   const ConversionRequest convreq1 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckEnglishT13nCallback callback(kKey, kValue);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq1.options(),
+                                     &callback);
     EXPECT_TRUE(callback.found());
   }
 
@@ -341,7 +351,8 @@ TEST_F(DictionaryImplTest, DisableT13nConversionTest) {
   const ConversionRequest convreq2 = ConvReq(config_);
   for (size_t i = 0; i < std::size(kTestPair); ++i) {
     CheckEnglishT13nCallback callback(kKey, kValue);
-    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2, &callback);
+    (d->*kTestPair[i].lookup_method)(kTestPair[i].query, convreq2.options(),
+                                     &callback);
     EXPECT_FALSE(callback.found());
   }
 }
@@ -362,13 +373,23 @@ TEST_F(DictionaryImplTest, LookupComment) {
 
   std::string comment;
   const ConversionRequest convreq = ConvReq(config_);
-  EXPECT_FALSE(d->LookupComment("key", "value", convreq, &comment));
+  EXPECT_FALSE(d->LookupComment("key", "value", convreq.options(), &comment));
   EXPECT_TRUE(comment.empty());
 
   // If key or value is "comment", UserDictionaryStub returns
   // "UserDictionaryStub" as comment.
-  EXPECT_TRUE(d->LookupComment("key", "comment", convreq, &comment));
+  EXPECT_TRUE(d->LookupComment("key", "comment", convreq.options(), &comment));
   EXPECT_EQ(comment, "UserDictionaryStub");
+}
+
+TEST_F(DictionaryImplTest, HasKeyValue) {
+  std::unique_ptr<DictionaryData> data = CreateDictionaryData();
+  DictionaryInterface* d = data->dictionary.get();
+  EXPECT_TRUE(d->HasKey("きょうと"));
+  EXPECT_TRUE(d->HasValue("京都"));
+
+  EXPECT_FALSE(d->HasKey("__きょうと__"));
+  EXPECT_FALSE(d->HasValue("__京都__"));
 }
 
 }  // namespace dictionary

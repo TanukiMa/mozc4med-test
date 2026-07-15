@@ -84,17 +84,15 @@ class ClientMock : public client::ClientInterface {
   MOCK_METHOD(bool, NoOperation, (), (override));
   MOCK_METHOD(void, EnableCascadingWindow, (bool enable), (override));
   MOCK_METHOD(void, set_timeout, (absl::Duration timeout), (override));
-  MOCK_METHOD(void, set_server_program, (absl::string_view program_path),
-              (override));
   MOCK_METHOD(void, set_suppress_error_dialog, (bool suppress), (override));
   MOCK_METHOD(void, set_client_capability,
               (const commands::Capability &capability), (override));
   MOCK_METHOD(bool, LaunchTool,
-              (const std::string &mode, absl::string_view extra_arg),
+              (absl::string_view mode, absl::string_view extra_arg),
               (override));
   MOCK_METHOD(bool, LaunchToolWithProtoBuf, (const commands::Output &output),
               (override));
-  MOCK_METHOD(bool, OpenBrowser, (const std::string &url), (override));
+  MOCK_METHOD(bool, OpenBrowser, (absl::string_view url), (override));
 };
 }  // namespace client
 }  // namespace mozc

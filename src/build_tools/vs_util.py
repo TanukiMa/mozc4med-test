@@ -30,6 +30,7 @@
 
 """A helper script to use Visual Studio."""
 
+import argparse
 import json
 import os
 import pathlib
@@ -76,7 +77,7 @@ def get_vcvarsall(
         r' --vcvarsall_path=C:\VS\VC\Auxiliary\Build\vcvarsall.bat'
     )
 
-  cmd = [
+  base_cmd = [
       str(vswhere_path),
       '-products',
       'Microsoft.VisualStudio.Product.Enterprise',
@@ -85,41 +86,43 @@ def get_vcvarsall(
       'Microsoft.VisualStudio.Product.BuildTools',
       '-find',
       'VC/Auxiliary/Build/vcvarsall.bat',
-      '-version',
-      '[17,18)',  # See https://github.com/microsoft/vswhere/wiki/Versions
       '-latest',
       '-utf8',
-  ]
-  cmd += [
       '-requires',
       'Microsoft.VisualStudio.Component.VC.Redist.14.Latest',
   ]
   if arch.endswith('arm64'):
-    cmd += ['Microsoft.VisualStudio.Component.VC.Tools.ARM64']
+    base_cmd += ['Microsoft.VisualStudio.Component.VC.Tools.ARM64']
 
-  process = subprocess.Popen(
-      cmd,
-      stdout=subprocess.PIPE,
-      stderr=subprocess.PIPE,
-      shell=False,
-      text=True,
-      encoding='utf-8',
-  )
-  stdout, stderr = process.communicate()
-  exitcode = process.wait()
-  if exitcode != 0:
-    msgs = ['Failed to execute vswhere.exe']
-    if stdout:
-      msgs += ['-----stdout-----', stdout]
-    if stderr:
-      msgs += ['-----stderr-----', stderr]
-    raise ChildProcessError('\n'.join(msgs))
+  # Try Visual Studio 2022 first, then fall back to Visual Studio 2026 when
+  # VS 2022 is not installed. This keeps VS 2022 as the default on machines
+  # that have both versions installed.
+  # See https://github.com/microsoft/vswhere/wiki/Versions
+  for version_filter in ('[17,18)', '[18,19)'):
+    cmd = base_cmd + ['-version', version_filter]
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+        text=True,
+        encoding='utf-8',
+    )
+    stdout, stderr = process.communicate()
+    exitcode = process.wait()
+    if exitcode != 0:
+      msgs = ['Failed to execute vswhere.exe']
+      if stdout:
+        msgs += ['-----stdout-----', stdout]
+      if stderr:
+        msgs += ['-----stderr-----', stderr]
+      raise ChildProcessError('\n'.join(msgs))
 
-  lines = stdout.splitlines()
-  if len(lines) > 0:
-    vcvarsall = pathlib.Path(lines[0])
-    if vcvarsall.exists():
-      return vcvarsall
+    lines = stdout.splitlines()
+    if len(lines) > 0:
+      vcvarsall = pathlib.Path(lines[0])
+      if vcvarsall.exists():
+        return vcvarsall
 
   msg = 'Could not find vcvarsall.bat.'
   if arch.endswith('arm64'):
@@ -188,3 +191,37 @@ def get_vs_env_vars(
   if exitcode != 0:
     raise ChildProcessError(f'Failed to execute {vcvarsall}')
   return json.loads(stdout.decode('ascii'))
+
+
+def get_vc_dir(
+    arch: str, vcvarsall_path_hint: Union[str, None] = None
+) -> pathlib.Path:
+  r"""Returns the VC directory path for use as 'BAZEL_VC'.
+
+  Args:
+    arch: host/target architecture
+    vcvarsall_path_hint: optional path to vcvarsall.bat
+
+  Returns:
+    The VC directory path, e.g. 'C:\\...\\Community\\VC'.
+
+  Raises:
+    FileNotFoundError: When 'vcvarsall.bat' cannot be found.
+  """
+  # vcvarsall.bat lives at <VC>\Auxiliary\Build\vcvarsall.bat
+  return get_vcvarsall(arch, vcvarsall_path_hint).parent.parent.parent
+
+
+def main() -> int:
+  parser = argparse.ArgumentParser(
+      description='Print the VC directory (value suitable for BAZEL_VC).'
+  )
+  parser.add_argument('--arch', default='x64')
+  parser.add_argument('--vcvarsall_path', default=None)
+  args = parser.parse_args()
+  print(get_vc_dir(args.arch, args.vcvarsall_path))
+  return 0
+
+
+if __name__ == '__main__':
+  sys.exit(main())

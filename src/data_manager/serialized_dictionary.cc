@@ -56,13 +56,6 @@ namespace {
 using CompilerToken = SerializedDictionary::CompilerToken;
 using TokenList = SerializedDictionary::TokenList;
 
-struct CompareByCost {
-  bool operator()(const std::unique_ptr<CompilerToken>& t1,
-                  const std::unique_ptr<CompilerToken>& t2) const {
-    return t1->cost < t2->cost;
-  }
-};
-
 void LoadTokens(std::istream* ifs, std::map<std::string, TokenList>* dic) {
   dic->clear();
   std::string line;
@@ -82,7 +75,12 @@ void LoadTokens(std::istream* ifs, std::map<std::string, TokenList>* dic) {
   }
 
   for (auto& kv : *dic) {
-    std::sort(kv.second.begin(), kv.second.end(), CompareByCost());
+    std::sort(kv.second.begin(), kv.second.end(),
+              // Compare by cost.
+              [](const std::unique_ptr<CompilerToken>& t1,
+                 const std::unique_ptr<CompilerToken>& t2) {
+                return t1->cost < t2->cost;
+              });
   }
 }
 
@@ -190,8 +188,8 @@ std::pair<absl::string_view, absl::string_view> SerializedDictionary::Compile(
 }
 
 void SerializedDictionary::CompileToFiles(
-    const std::string& input, const std::string& output_token_array,
-    const std::string& output_string_array) {
+    absl::string_view input, absl::string_view output_token_array,
+    absl::string_view output_string_array) {
   InputFileStream ifs(input);
   CHECK(ifs.good());
   std::map<std::string, TokenList> dic;
@@ -201,8 +199,8 @@ void SerializedDictionary::CompileToFiles(
 
 void SerializedDictionary::CompileToFiles(
     const std::map<std::string, TokenList>& dic,
-    const std::string& output_token_array,
-    const std::string& output_string_array) {
+    absl::string_view output_token_array,
+    absl::string_view output_string_array) {
   std::unique_ptr<uint32_t[]> buf1, buf2;
   const std::pair<absl::string_view, absl::string_view> data =
       Compile(dic, &buf1, &buf2);

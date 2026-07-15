@@ -37,18 +37,27 @@
 namespace mozc {
 namespace win32 {
 
+enum class COMServerBitness {
+  k64bit,
+  k32bit,
+};
+
 // Registers Mozc as a text input processor or unregister.
 class TsfRegistrar {
  public:
   TsfRegistrar() = delete;
-  TsfRegistrar(const TsfRegistrar &) = delete;
-  TsfRegistrar &operator=(const TsfRegistrar &) = delete;
+  TsfRegistrar(const TsfRegistrar&) = delete;
+  TsfRegistrar& operator=(const TsfRegistrar&) = delete;
 
   // Registers the DLL specified with |path| as a COM server.
-  static HRESULT RegisterCOMServer(const wchar_t *path, DWORD length);
+  // |bitness| specifies which registry view to use: k64bit for the native
+  // 64-bit view, k32bit for the WOW6432Node (32-bit) view.
+  static HRESULT RegisterCOMServer(const wchar_t* path, DWORD length,
+                                   COMServerBitness bitness);
 
   // Unregisters the DLL from registry.
-  static void UnregisterCOMServer();
+  // |bitness| specifies which registry view to unregister from.
+  static void UnregisterCOMServer(COMServerBitness bitness);
 
   // Registers this COM server to the profile store for input processors.
   // The caller is responsible for initializing COM before call this function.

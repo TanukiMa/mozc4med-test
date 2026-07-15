@@ -100,7 +100,6 @@ mozc_cc_library(
         "//base:init_mozc",
         "//base:process_mutex",
         "//base:run_level",
-        "//base:singleton",
         "//base:system_util",
         "//base:vlog",
         "//config:stats_config_util",
@@ -124,8 +123,4 @@ mozc_macos_application(
         "//mac:__pkg__",
     ],
     deps = [":mozc_server_lib"],
-    # When we support Breakpad, uncomment the following block.
-    # additional_contents = {
-    #     "[Breakpad]" : "Frameworks",
-    # },
 )

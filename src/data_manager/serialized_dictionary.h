@@ -270,7 +270,7 @@ class SerializedDictionary {
 
   // Creates serialized data into buffers.  The first and second string views of
   // returned value points to memory block for token array and string array,
-  // respectively.  The input stream should supply TSV file of Mozc's dctionary
+  // respectively.  The input stream should supply TSV file of Mozc's dictionary
   // format; see, e.g., data/symbol/symbol.tsv.
   static std::pair<absl::string_view, absl::string_view> Compile(
       std::istream* input, std::unique_ptr<uint32_t[]>* output_token_array_buf,
@@ -281,12 +281,12 @@ class SerializedDictionary {
       std::unique_ptr<uint32_t[]>* output_string_array_buf);
 
   // Creates serialized data and writes them to files.
-  static void CompileToFiles(const std::string& input,
-                             const std::string& output_token_array,
-                             const std::string& output_string_array);
+  static void CompileToFiles(absl::string_view input,
+                             absl::string_view output_token_array,
+                             absl::string_view output_string_array);
   static void CompileToFiles(const std::map<std::string, TokenList>& dic,
-                             const std::string& output_token_array,
-                             const std::string& output_string_array);
+                             absl::string_view output_token_array,
+                             absl::string_view output_string_array);
 
   // Validates the serialized data.
   static bool VerifyData(absl::string_view token_array_data,

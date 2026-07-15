@@ -30,7 +30,6 @@
 #ifndef MOZC_RENDERER_RENDERER_SERVER_H_
 #define MOZC_RENDERER_RENDERER_SERVER_H_
 
-#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -76,6 +75,9 @@ class RendererServer : public IPCServer {
   virtual bool AsyncExecCommand(absl::string_view proto_message) = 0;
 
  protected:
+  // For testing purposes where a custom service name needs to be specified.
+  explicit RendererServer(bool for_testing);
+
   // implement Message Loop function.
   // This function should be blocking.
   // The return value is supposed to be used for the arg of exit().
@@ -85,13 +87,9 @@ class RendererServer : public IPCServer {
   // of AsyncExecCommand()
   bool ExecCommandInternal(const commands::RendererCommand& command);
 
-  // return timeout (msec) passed by FLAGS_timeout
-  uint32_t timeout() const;
-
   RendererInterface* renderer_interface_ = nullptr;
 
  private:
-  uint32_t timeout_;
   std::unique_ptr<ProcessWatchDog> watch_dog_;
   std::unique_ptr<RendererServerSendCommand> send_command_;
 };

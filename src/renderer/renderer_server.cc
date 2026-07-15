@@ -29,16 +29,15 @@
 
 #include "renderer/renderer_server.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <string>
 
-#include "absl/flags/flag.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/time/time.h"
+#include "base/random.h"
 #include "base/system_util.h"
 #include "base/vlog.h"
 #include "client/client_interface.h"
@@ -58,12 +57,6 @@
 #include "base/win32/win_util.h"
 #endif  // _WIN32
 
-// By default, mozc_renderer quits when user-input continues to be
-// idle for 10min.
-ABSL_FLAG(int32_t, timeout, 10 * 60, "timeout of candidate server (sec)");
-ABSL_FLAG(bool, restricted, false,
-          "launch candidates server with restricted mode");
-
 namespace mozc {
 namespace renderer {
 
@@ -76,14 +69,18 @@ constexpr int kNumConnections = 10;
 constexpr absl::Duration kIPCServerTimeOut = absl::Milliseconds(1000);
 constexpr char kServiceName[] = "renderer";
 
-std::string GetServiceName() {
+std::string ConstructServiceName(bool for_testing) {
   std::string name = kServiceName;
+  if (for_testing) {
+    absl::StrAppend(&name, ".test.", Random().Utf8String(16, 'a', 'z'));
+  }
   const std::string desktop_name = SystemUtil::GetDesktopNameAsString();
   if (!desktop_name.empty()) {
     absl::StrAppend(&name, ".", desktop_name);
   }
   return name;
 }
+
 }  // namespace
 
 class RendererServerSendCommand : public client::SendCommandInterface {
@@ -130,11 +127,13 @@ class RendererServerSendCommand : public client::SendCommandInterface {
   uint32_t receiver_handle_;
 };
 
-RendererServer::RendererServer()
-    : IPCServer(GetServiceName(), kNumConnections, kIPCServerTimeOut),
+RendererServer::RendererServer() : RendererServer(false) {}
+
+RendererServer::RendererServer(bool for_testing)
+    : IPCServer(ConstructServiceName(for_testing), kNumConnections,
+                kIPCServerTimeOut),
       renderer_interface_(nullptr),
-      timeout_(0),
-      send_command_(new RendererServerSendCommand) {
+      send_command_(std::make_unique<RendererServerSendCommand>()) {
   watch_dog_ = std::make_unique<ProcessWatchDog>(
       [this](ProcessWatchDog::SignalType type) {
         if (type == ProcessWatchDog::SignalType::PROCESS_SIGNALED ||
@@ -151,14 +150,6 @@ RendererServer::RendererServer()
           }
         }
       });
-  if (absl::GetFlag(FLAGS_restricted)) {
-    absl::SetFlag(&FLAGS_timeout,
-                  // set 60sec with restricted mode
-                  std::min(absl::GetFlag(FLAGS_timeout), 60));
-  }
-
-  timeout_ = 1000 * std::clamp(absl::GetFlag(FLAGS_timeout), 3, 24 * 60 * 60);
-  MOZC_VLOG(2) << "timeout is set to be : " << timeout_;
 
 #ifndef NDEBUG
   mozc::internal::SetConfigVLogLevel(
@@ -185,8 +176,8 @@ int RendererServer::StartServer() {
   LoopAndReturn();
 
   // send "ready" event to the client
-  const std::string name = GetServiceName();
-  NamedEventNotifier notifier(name.c_str());
+  absl::string_view name = GetServiceName();
+  NamedEventNotifier notifier(name);
   notifier.Notify();
 
   // start main event loop
@@ -244,6 +235,5 @@ bool RendererServer::ExecCommandInternal(
   return false;
 }
 
-uint32_t RendererServer::timeout() const { return timeout_; }
 }  // namespace renderer
 }  // namespace mozc

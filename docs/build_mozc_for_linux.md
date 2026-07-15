@@ -9,11 +9,11 @@
 If you are not sure what the following commands do, please check the
 descriptions below and make sure the operations before running them.
 
-```
-git clone https://github.com/google/mozc.git --recursive
+```sh
+git clone https://github.com/google/mozc.git
 cd mozc/src
 
-bazelisk build package --config oss_linux --config release_build
+bazelisk build package --config release_build
 ```
 
 `bazel-bin/unix/mozc.zip` contains built files.
@@ -101,8 +101,8 @@ macro defined in
 
 You can download Mozc source code as follows.
 
-```
-git clone https://github.com/google/mozc.git --recursive
+```sh
+git clone https://github.com/google/mozc.git
 cd mozc/src
 ```
 
@@ -113,8 +113,8 @@ Hereafter you can do all the operations without changing directory.
 You should be able to build Mozc for Linux desktop as follows, assuming
 `bazelisk` is in your `$PATH`.
 
-```
-bazelisk build package --config oss_linux --config release_build
+```sh
+bazelisk build package --config release_build
 ```
 
 `package` is an alias to build Mozc executables and archive them into
@@ -126,8 +126,18 @@ bazelisk build package --config oss_linux --config release_build
 configurations. Try the following command to
 [clean Bazel's build cache](https://bazel.build/docs/user-manual#clean).
 
-```
+```sh
 bazelisk clean --expunge
+```
+
+### Troubleshooting: Linker error `relocation refers to a discarded section`
+
+If you encounter linker errors related to `.sframe` sections (e.g., `relocation
+refers to a discarded section` when using GCC 15+ and LLD 19+ in non-release
+builds), you can append `--config no_sframe` to disable SFrame generation:
+
+```sh
+bazelisk build package --config no_sframe
 ```
 
 ### How to customize installation locations
@@ -151,13 +161,13 @@ To customize above installation locations, modify
 
 💡 The following command makes the specified file untracked by Git.
 
-```
+```sh
 git update-index --assume-unchanged src/config.bzl
 ```
 
 💡 This command reverts the above change.
 
-```
+```sh
 git update-index --no-assume-unchanged src/config.bzl
 ```
 
@@ -171,24 +181,24 @@ git update-index --no-assume-unchanged src/config.bzl
 
 ### Run all tests
 
-```
-bazelisk test ... --config oss_linux --build_tests_only -c dbg
+```sh
+bazelisk test ... --build_tests_only -c dbg
 ```
 
 *   `...` means all targets under the current and subdirectories.
 
 ### Run tests under the specific directories
 
-```
-bazelisk test base/... composer/... --config oss_linux --build_tests_only -c dbg
+```sh
+bazelisk test base/... composer/... --build_tests_only -c dbg
 ```
 
 *   `<dir>/...` means all targets under the `<dir>/` directory.
 
 ### Run tests without the specific directories
 
-```
-bazelisk test ... --config oss_linux --build_tests_only -c dbg -- -base/...
+```sh
+bazelisk test ... --build_tests_only -c dbg -- -base/...
 ```
 
 *   `--` means the end of the flags which start from `-`.
@@ -196,8 +206,8 @@ bazelisk test ... --config oss_linux --build_tests_only -c dbg -- -base/...
 
 ### Run the specific test
 
-```
-bazelisk test base:util_test --config oss_linux -c dbg
+```sh
+bazelisk test base:util_test -c dbg
 ```
 
 *   `util_test` is defined in `base/BUILD.bazel`.
@@ -205,11 +215,25 @@ bazelisk test base:util_test --config oss_linux -c dbg
 ### Output logs to stderr
 
 ```
-bazelisk test base:util_test --config oss_linux --test_arg=--stderrthreshold=0 --test_output=all
+bazelisk test base:util_test --test_arg=--stderrthreshold=0 --test_output=all
 ```
 
-*   The `--test_arg=--stderrthreshold=0 --test_output=all` flags shows the
+*   The `--test_arg=--stderrthreshold=0 --test_output=all` flags show the
     output of unitests to stderr.
+
+### Examples of environment-specific options
+
+#### JDK options
+
+```sh
+bazelisk test ... --java_runtime_version=remotejdk_21
+```
+
+#### C/C++ compiler options
+
+```sh
+bazelisk test ... --repo_env=CC=gcc-14 --repo_env=CXX=g++-14
+```
 
 --------------------------------------------------------------------------------
 

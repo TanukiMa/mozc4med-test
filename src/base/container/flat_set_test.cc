@@ -30,9 +30,14 @@
 #include "base/container/flat_set.h"
 
 #include <functional>
+#include <string>
 
 #include "absl/strings/string_view.h"
 #include "testing/gunit.h"
+
+#if defined(EXPECT_DEATH) && defined(ABSL_MIN_LOG_LEVEL)
+#include "absl/base/log_severity.h"
+#endif  // EXPECT_DEATH && ABSL_MIN_LOG_LEVEL
 
 namespace mozc {
 namespace {
@@ -68,6 +73,36 @@ TEST(FlatSetTest, CustomCompare) {
   EXPECT_TRUE(kSet.contains("five"));
   EXPECT_FALSE(kSet.contains("six"));
 }
+
+TEST(FlatSetTest, SingleElement) {
+  // The uniqueness verification used to read past the end of the array for a
+  // single-element set, which failed the constant evaluation.
+  constexpr auto kSet = CreateFlatSet<int>({42});
+
+  EXPECT_TRUE(kSet.contains(42));
+  EXPECT_FALSE(kSet.contains(0));
+}
+
+#if defined(EXPECT_DEATH)
+TEST(FlatSetDeathTest, DuplicateEntries) {
+  // Runtime construction with duplicate entries hits LOG(FATAL). Compile-time
+  // construction with duplicate entries fails the build instead.
+#if defined(ABSL_MIN_LOG_LEVEL)
+  constexpr bool kIsLogFatal =
+      ABSL_MIN_LOG_LEVEL <= static_cast<int>(absl::LogSeverity::kFatal);
+#else  // ABSL_MIN_LOG_LEVEL
+  constexpr bool kIsLogFatal = true;
+#endif  // ABSL_MIN_LOG_LEVEL
+
+  const std::string kExpectedMessage =
+      kIsLogFatal ? "Duplicate entry found" : "";
+
+  EXPECT_DEATH(CreateFlatSet<int>({1, 1, 2, 3, 4}), kExpectedMessage);
+  // The uniqueness verification used to stop at the middle of the sorted
+  // array, missing duplicates in the second half.
+  EXPECT_DEATH(CreateFlatSet<int>({1, 2, 3, 4, 4}), kExpectedMessage);
+}
+#endif  // defined(EXPECT_DEATH)
 
 }  // namespace
 }  // namespace mozc

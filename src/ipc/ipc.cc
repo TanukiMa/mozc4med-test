@@ -33,11 +33,10 @@
 #include <memory>
 #include <string>
 
+#include "absl/base/no_destructor.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
-#include "base/singleton.h"
-#include "base/strings/zstring_view.h"
 #include "base/thread.h"
 #include "ipc/ipc_path_manager.h"
 
@@ -70,18 +69,19 @@ void IPCServer::Wait() {
 }
 
 std::unique_ptr<IPCClientInterface> IPCClientFactory::NewClient(
-    zstring_view name, zstring_view path_name) {
+    absl::string_view name, absl::string_view path_name) {
   return std::make_unique<IPCClient>(name, path_name);
 }
 
 std::unique_ptr<IPCClientInterface> IPCClientFactory::NewClient(
-    zstring_view name) {
+    absl::string_view name) {
   return std::make_unique<IPCClient>(name);
 }
 
 // static
 IPCClientFactory *IPCClientFactory::GetIPCClientFactory() {
-  return Singleton<IPCClientFactory>::get();
+  static absl::NoDestructor<IPCClientFactory> factory;
+  return factory.get();
 }
 
 uint32_t IPCClient::GetServerProtocolVersion() const {
@@ -89,7 +89,7 @@ uint32_t IPCClient::GetServerProtocolVersion() const {
   return ipc_path_manager_->GetServerProtocolVersion();
 }
 
-const std::string &IPCClient::GetServerProductVersion() const {
+absl::string_view IPCClient::GetServerProductVersion() const {
   DCHECK(ipc_path_manager_);
   return ipc_path_manager_->GetServerProductVersion();
 }
@@ -100,7 +100,7 @@ uint32_t IPCClient::GetServerProcessId() const {
 }
 
 // static
-bool IPCClient::TerminateServer(const absl::string_view name) {
+bool IPCClient::TerminateServer(absl::string_view name) {
   IPCClient client(name);
 
   if (!client.Connected()) {

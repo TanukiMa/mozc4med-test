@@ -53,7 +53,6 @@
 #include "converter/attribute.h"
 #include "converter/candidate.h"
 #include "converter/segments.h"
-#include "data_manager/data_manager.h"
 #include "dictionary/pos_matcher.h"
 #include "protocol/commands.pb.h"
 #include "protocol/config.pb.h"
@@ -283,17 +282,6 @@ void SetNumberInfoToExistingCandidates(
   }
 }
 
-class CheckValueOperator {
- public:
-  explicit CheckValueOperator(const absl::string_view v) : find_value_(v) {}
-  bool operator()(const converter::Candidate& cand) const {
-    return (cand.value == find_value_);
-  }
-
- private:
-  const absl::string_view find_value_;
-};
-
 // If we have the candidates to be inserted before the base candidate,
 // delete them.
 void FindEraseCandidates(absl::Span<const converter::Candidate> results,
@@ -397,7 +385,9 @@ void InsertConvertedCandidates(absl::Span<const converter::Candidate> results,
     const absl::string_view base_value =
         seg->candidate(base_candidate_pos).value;
     const auto itr = std::find_if(results.begin(), results.end(),
-                                  CheckValueOperator(base_value));
+                                  [&](const converter::Candidate& cand) {
+                                    return cand.value == base_value;
+                                  });
     if (itr != results.end() &&
         itr->style != NumberUtil::NumberString::NUMBER_KANJI &&
         itr->style != NumberUtil::NumberString::NUMBER_KANJI_ARABIC) {
@@ -453,14 +443,11 @@ std::vector<NumberUtil::NumberString> GetNumbersInDefaultOrder(
 
 }  // namespace
 
-NumberRewriter::NumberRewriter(const DataManager& data_manager)
-    : pos_matcher_(data_manager.GetPosMatcherData()) {
-  absl::string_view data = data_manager.GetCounterSuffixSortedArray();
-  // Data manager is responsible for providing a valid data.  Just verify data
-  // in debug build.
-  DCHECK(SerializedStringArray::VerifyData(data));
-  suffix_array_.Set(data);
-
+NumberRewriter::NumberRewriter(absl::string_view counter_suffix_data,
+                               dictionary::PosMatcher pos_matcher)
+    : pos_matcher_(std::move(pos_matcher)) {
+  DCHECK(SerializedStringArray::VerifyData(counter_suffix_data));
+  suffix_array_.Set(counter_suffix_data);
   Reload();
 }
 

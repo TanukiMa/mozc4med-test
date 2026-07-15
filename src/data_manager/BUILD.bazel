@@ -62,6 +62,7 @@ mozc_cc_library(
     deps = [
         ":dataset_reader",
         ":serialized_dictionary",
+        "//base:bits",
         "//base:mmap",
         "//base:version",
         "//base:vlog",
@@ -92,6 +93,7 @@ mozc_cc_library(
         "//base:file_stream",
         "//base:util",
         "//base/container:serialized_string_array",
+        "//base/container:tuple",
         "//converter:connector",
         "//converter:node",
         "//converter:segmenter",
@@ -104,6 +106,7 @@ mozc_cc_library(
         "@com_google_absl//absl/random",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -141,6 +144,7 @@ mozc_cc_library(
         "//base:number_util",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -199,7 +203,7 @@ mozc_cc_binary(
         ":dataset_writer",
         "//base:file_stream",
         "//base:file_util",
-        "//base:init_mozc_buildtool",
+        "//base:init_mozc",
         "//base:number_util",
         "//base:vlog",
         "@com_google_absl//absl/flags:flag",
@@ -318,5 +322,8 @@ mozc_cc_library(
     name = "emoji_data",
     hdrs = ["emoji_data.h"],
     visibility = ["//rewriter:__pkg__"],
-    deps = ["//base:bits"],
+    deps = [
+        "//base:bits",
+        "@com_google_absl//absl/base:core_headers",
+    ],
 )

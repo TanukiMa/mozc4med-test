@@ -27,25 +27,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MOZC_CONVERTER_IMMUTABLE_CONVERTER_FACTORY_H_
-#define MOZC_CONVERTER_IMMUTABLE_CONVERTER_FACTORY_H_
+#ifndef MOZC_CONVERTER_DEBUG_UTIL_H_
+#define MOZC_CONVERTER_DEBUG_UTIL_H_
 
-#include "converter/immutable_converter_interface.h"
+#include <string>
+
+#include "converter/lattice.h"
 
 namespace mozc {
+namespace converter {
 
-class ImmutableConverterFactory {
- public:
-  ImmutableConverterFactory() = delete;
+// Dumps all nodes in the given lattice in TSV format.
+// The output format includes id, key, value, begin_pos, end_pos, lid, rid,
+// wcost, cost, bnext, enext, prev, and next for each node.
+std::string DumpNodes(const Lattice& lattice);
 
-  // return singleton object
-  static ImmutableConverterInterface* GetImmutableConverter();
-
-  // dependency injection for unittesting
-  static void SetImmutableConverter(
-      ImmutableConverterInterface* immutable_converter);
-};
-
+}  // namespace converter
 }  // namespace mozc
 
-#endif  // MOZC_CONVERTER_IMMUTABLE_CONVERTER_FACTORY_H_
+#endif  // MOZC_CONVERTER_DEBUG_UTIL_H_

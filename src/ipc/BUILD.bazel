@@ -61,14 +61,12 @@ mozc_cc_library(
     deps = [
         ":ipc_path_manager",
         "//base:const",
-        "//base:cpu_stats",
         "//base:file_util",
-        "//base:singleton",
         "//base:system_util",
         "//base:thread",
         "//base:util",
         "//base:vlog",
-        "//base/strings:zstring_view",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/status",
@@ -77,8 +75,7 @@ mozc_cc_library(
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",
     ] + mozc_select(
-        ios = ["//base/mac:mac_util"],
-        macos = ["//base/mac:mac_util"],
+        apple = ["//base/mac:mac_util"],
         windows = [
             "//base/win32:win_sandbox",
             "//base/win32:wide_char",
@@ -111,11 +108,11 @@ mozc_cc_library(
         "//base:port",
         "//base:process_mutex",
         "//base:random",
-        "//base:singleton",
         "//base:system_util",
         "//base:util",
         "//base:version",
         "//base:vlog",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -123,8 +120,7 @@ mozc_cc_library(
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/synchronization",
     ] + mozc_select(
-        ios = ["//base/mac:mac_util"],
-        macos = ["//base/mac:mac_util"],
+        apple = ["//base/mac:mac_util"],
         windows = [
             "//base/win32:wide_char",
             "@com_microsoft_wil//:wil",
@@ -165,7 +161,7 @@ mozc_cc_library(
     deps = [
         ":ipc",
         "//base:version",
-        "//base/strings:zstring_view",
+        "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/time",
     ],
 )
@@ -177,8 +173,8 @@ mozc_cc_library(
     visibility = ["//renderer:__subpackages__"],
     deps = [
         ":ipc",
-        "//base/strings:zstring_view",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -235,6 +231,7 @@ mozc_cc_test(
         "//base:thread",
         "//testing:gunit_main",
         "//testing:mozctest",
+        "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/time",
     ],
 )
@@ -271,7 +268,6 @@ mozc_cc_library(
     textual_hdrs = ["ipc.h"],
     deps = [
         "//base:thread",
-        "//base/strings:zstring_view",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
         "@com_google_absl//absl/time",

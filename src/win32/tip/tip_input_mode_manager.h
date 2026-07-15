@@ -37,6 +37,7 @@
 #include <vector>
 
 #include "absl/types/span.h"
+#include "protocol/commands.pb.h"
 #include "win32/base/indicator_visibility_tracker.h"
 #include "win32/base/keyboard.h"
 
@@ -47,26 +48,18 @@ namespace tsf {
 // Exposed for unit testing.
 class TipInputModeManagerImpl {
  public:
-  enum ConversionMode {
-    kDirect,
-    kHiragana,
-    kFullKatakana,
-    kHalfAscii,
-    kFullAscii,
-    kHalfKatakana,
-  };
   struct StatePair {
     StatePair() = default;
-    StatePair(bool open_close, ConversionMode conversion_mode)
+    StatePair(bool open_close, commands::CompositionMode conversion_mode)
         : open_close(open_close), conversion_mode(conversion_mode) {}
 
     bool open_close = false;
-    ConversionMode conversion_mode = kHiragana;
+    commands::CompositionMode conversion_mode = commands::HIRAGANA;
   };
 
  protected:
   static StatePair GetOverriddenState(
-      const StatePair &base_state, absl::Span<const InputScope> input_scopes);
+      const StatePair& base_state, absl::Span<const InputScope> input_scopes);
 };
 
 // In TSF, IME open/close mode and conversion mode are managed per thread not
@@ -97,23 +90,23 @@ class TipInputModeManager : public TipInputModeManagerImpl {
   };
   typedef uint32_t NotifyActionSet;
 
-  explicit TipInputModeManager(const Config &config)
+  explicit TipInputModeManager(const Config& config)
       : use_global_mode_(config.use_global_mode) {}
   // Movable
-  TipInputModeManager(TipInputModeManager &&) = default;
-  TipInputModeManager &operator=(TipInputModeManager &&) = default;
+  TipInputModeManager(TipInputModeManager&&) = default;
+  TipInputModeManager& operator=(TipInputModeManager&&) = default;
 
   // Functions to access embedded IndicatorVisibilityTracker.
   Action OnDissociateContext();
-  Action OnTestKey(const VirtualKey &key, bool is_down, bool eaten);
-  Action OnKey(const VirtualKey &key, bool is_down, bool eaten);
+  Action OnTestKey(const VirtualKey& key, bool is_down, bool eaten);
+  Action OnKey(const VirtualKey& key, bool is_down, bool eaten);
   Action OnMoveFocusedWindow();
   bool IsIndicatorVisible() const;
 
   void OnInitialize(bool system_open_close_mode, DWORD system_conversion_mode);
   NotifyActionSet OnReceiveCommand(bool mozc_open_close_mode,
-                                   DWORD mozc_logical_mode,
-                                   DWORD mozc_visible_mode);
+                                   commands::CompositionMode mozc_logical_mode,
+                                   commands::CompositionMode mozc_visible_mode);
   Action OnSetFocus(bool system_open_close_mode, DWORD system_conversion_mode,
                     absl::Span<const InputScope> input_scopes);
   Action OnChangeOpenClose(bool new_open_close_mode);
@@ -125,9 +118,9 @@ class TipInputModeManager : public TipInputModeManagerImpl {
   // Returns an IME open/close state that is visible from TSF.
   bool GetTsfOpenClose() const;
   // Returns IME conversion mode that is visible from the Mozc session.
-  ConversionMode GetEffectiveConversionMode() const;
+  commands::CompositionMode GetEffectiveConversionMode() const;
   // Returns IME conversion mode that is visible from TSF.
-  ConversionMode GetTsfConversionMode() const;
+  commands::CompositionMode GetTsfConversionMode() const;
 
  private:
   bool use_global_mode_ = false;

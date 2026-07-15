@@ -55,12 +55,14 @@
 namespace mozc::prediction {
 namespace {
 
+using ::mozc::converter::Attribute;
+
 static constexpr int kSuffixCacheSize = 256;
 
 // TODO(taku): Defines this function as a common utility function.
 Segments MakeSegments(const ConversionRequest& request) {
   converter::Segments segments;
-  const prediction::Result& result = request.history_result();
+  const Result& result = request.history_result();
 
   auto add_history_segment = [&](absl::string_view key, absl::string_view value,
                                  absl::string_view content_key,
@@ -106,10 +108,7 @@ std::optional<Result> ConversionSegmentsToResult(const Segments& segments) {
     absl::StrAppend(&result.key, candidate.key);
     result.wcost += candidate.wcost;
     result.cost += candidate.cost;
-    result.candidate_attributes |= candidate.attributes;
-    result.candidate_attributes |=
-        (candidate.attributes &
-         converter::Attribute::USER_SEGMENT_HISTORY_REWRITER);
+    result.attributes |= candidate.attributes;
     builder.Add(candidate.key.size(), candidate.value.size(),
                 candidate.content_key.size(), candidate.content_value.size());
   }
@@ -141,6 +140,7 @@ bool RealtimeDecoder::PushBackTopConversionResult(
   // This method emulates usual converter's behavior so here disable
   // partial candidates.
   options.create_partial_candidates = false;
+  options.used_in_predictor_realtime_conversion = true;
   options.request_type = ConversionRequest::CONVERSION;
   const ConversionRequest tmp_request = ConversionRequestBuilder()
                                             .SetConversionRequestView(request)
@@ -164,7 +164,7 @@ bool RealtimeDecoder::PushBackTopConversionResult(
   Result& result = result_opt.value();
   result.SetTypesAndTokenAttributes(REALTIME | REALTIME_TOP,
                                     dictionary::Token::NONE);
-  result.candidate_attributes |= converter::Attribute::NO_VARIANTS_EXPANSION;
+  result.attributes |= Attribute::NO_VARIANTS_EXPANSION;
 
   results->emplace_back(std::move(result));
 
@@ -205,7 +205,8 @@ std::vector<Result> RealtimeDecoder::Decode(
   }
 
   // non-CONVERSION request returns concatenated single segment.
-  if (!immutable_converter().Convert(request_for_realtime, &tmp_segments) ||
+  if (!immutable_converter().Convert(request_for_realtime.options(),
+                                     &tmp_segments) ||
       tmp_segments.conversion_segments_size() != 1 ||
       tmp_segments.conversion_segment(0).candidates_size() == 0) {
     LOG(WARNING) << "Convert failed";
@@ -226,18 +227,16 @@ std::vector<Result> RealtimeDecoder::Decode(
     result.rid = candidate.rid;
     result.inner_segment_boundary = candidate.inner_segment_boundary;
     result.SetTypesAndTokenAttributes(REALTIME, dictionary::Token::NONE);
-    result.candidate_attributes |= converter::Attribute::NO_VARIANTS_EXPANSION;
+    result.attributes |= Attribute::NO_VARIANTS_EXPANSION;
     if (candidate.key.size() < segment.key().size()) {
-      result.candidate_attributes |=
-          converter::Attribute::PARTIALLY_KEY_CONSUMED;
+      result.attributes |= Attribute::PARTIALLY_KEY_CONSUMED;
       result.consumed_key_size = Util::CharsLen(candidate.key);
     }
     // Kana expansion happens inside the decoder.
-    if (candidate.attributes &
-        converter::Attribute::KEY_EXPANDED_IN_DICTIONARY) {
-      result.types |= prediction::KEY_EXPANDED_IN_DICTIONARY;
+    if (candidate.attributes & Attribute::KEY_EXPANDED_IN_DICTIONARY) {
+      result.attributes |= KEY_EXPANDED_IN_DICTIONARY;
     }
-    result.candidate_attributes |= candidate.attributes;
+    result.attributes |= candidate.attributes;
     results.emplace_back(std::move(result));
   }
 
@@ -254,7 +253,8 @@ std::vector<Result> RealtimeDecoder::ReverseDecode(
           .SetRequestType(ConversionRequest::REVERSE_CONVERSION)
           .Build();
 
-  if (!immutable_converter().Convert(request_for_reverse, &tmp_segments) ||
+  if (!immutable_converter().Convert(request_for_reverse.options(),
+                                     &tmp_segments) ||
       tmp_segments.conversion_segments_size() == 0) {
     LOG(WARNING) << "Reverse conversion failed";
     return {};
@@ -286,6 +286,7 @@ std::optional<Result> RealtimeDecoder::DecodeSuffix(
   options.create_partial_candidates = false;
   options.kana_modifier_insensitive_conversion = false;
   options.use_actual_converter_for_realtime_conversion = false;
+  options.used_in_predictor_realtime_conversion = true;
 
   const bool has_prefix = prefix_rid != 0;
 

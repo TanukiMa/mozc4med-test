@@ -43,39 +43,49 @@
 #include "base/file_util.h"
 #include "base/protobuf/text_format.h"
 #include "base/system_util.h"
+#include "base/protobuf_util.h"
+#include "base/text_normalizer.h"
 #include "unix/ibus/ibus_config.pb.h"
 #include "unix/ibus/main.h"
 
 namespace mozc {
 
-constexpr char kIbusConfigFile[] = "ibus_config.textproto";
+constexpr absl::string_view kIbusConfigFile = "ibus_config.textproto";
 
 namespace {
+// Defines absl::string_view kIbusConfigTextProto.
+#include "unix/ibus/ibus_config_textproto.inc"
+
 std::string UpdateConfigFile() {
   const std::string engines_file = FileUtil::JoinPath(
       SystemUtil::GetUserProfileDirectory(), kIbusConfigFile);
-  if (absl::Status s = FileUtil::FileExists(engines_file); s.ok()) {
+  absl::Status s = FileUtil::FileExists(engines_file);
+  if (s.ok()) {
     absl::StatusOr<std::string> config = FileUtil::GetContents(engines_file);
-    if (!config.ok()) {
-      LOG(ERROR) << config.status();
-      return kIbusConfigTextProto;
+    if (config.ok()) {
+      return *std::move(config);
     }
-    return *std::move(config);
-  } else if (absl::IsNotFound(s)) {
-    if (absl::Status s =
-            FileUtil::SetContents(engines_file, kIbusConfigTextProto);
-        !s.ok()) {
+
+    LOG(ERROR) << config.status();
+    return std::string(kIbusConfigTextProto);
+  }
+
+  if (absl::IsNotFound(s)) {
+    // If the file does not exist, create a new one with the default setting.
+    s = FileUtil::SetContents(engines_file, kIbusConfigTextProto);
+    if (!s.ok()) {
       LOG(ERROR) << "Failed to write " << engines_file << ": " << s;
     }
-    return kIbusConfigTextProto;
-  } else {
-    LOG(ERROR) << "Cannot check if " << engines_file << "exists: " << s;
-    return kIbusConfigTextProto;
+    return std::string(kIbusConfigTextProto);
   }
+
+  LOG(ERROR) << "Cannot check if " << engines_file << "exists: " << s;
+  return std::string(kIbusConfigTextProto);
 }
 
-std::string NormalizeLayout(const std::string &layout) {
+std::string NormalizeLayout(absl::string_view layout) {
   std::string output;
+  output.reserve(layout.size());
   for (const char c : layout) {
     if (absl::ascii_isalnum(c) || c == '_' || c == '-' || c == '/') {
       output += c;
@@ -86,15 +96,19 @@ std::string NormalizeLayout(const std::string &layout) {
   return output;
 }
 
-bool ParseConfig(const std::string &data, ibus::Config &config) {
+bool ParseConfig(absl::string_view data, ibus::Config& config) {
   const bool success =
       mozc::protobuf::TextFormat::ParseFromString(data, &config);
   if (!success) {
     // Failed to parse the data, fallback to the default setting.
-    mozc::protobuf::TextFormat::ParseFromString(kIbusConfigTextProto, &config);
+    if (!mozc::protobuf::TextFormat::ParseFromString(kIbusConfigTextProto,
+                                                     &config)) {
+      LOG(ERROR) << "Failed to parse the default config.";
+      return false;
+    };
   }
 
-  for (ibus::Engine &engine : *config.mutable_engines()) {
+  for (ibus::Engine& engine : *config.mutable_engines()) {
     engine.set_layout(NormalizeLayout(engine.layout()));
     engine.set_layout_variant(NormalizeLayout(engine.layout_variant()));
     engine.set_layout_option(NormalizeLayout(engine.layout_option()));
@@ -102,7 +116,7 @@ bool ParseConfig(const std::string &data, ibus::Config &config) {
   return success;
 }
 
-std::string EscapeXmlValue(const std::string &value) {
+std::string EscapeXmlValue(absl::string_view value) {
   return absl::StrReplaceAll(value, {{"&", "&amp;"},
                                      {"<", "&lt;"},
                                      {">", "&gt;"},
@@ -110,9 +124,9 @@ std::string EscapeXmlValue(const std::string &value) {
                                      {"'", "&apos;"}});
 }
 
-std::string CreateEnginesXml(const ibus::Config &config) {
+std::string CreateEnginesXml(const ibus::Config& config) {
   std::string output = "<engines>\n";
-  for (const ibus::Engine &engine : config.engines()) {
+  for (const ibus::Engine& engine : config.engines()) {
     // clang-format off
     absl::StrAppend(
         &output,
@@ -142,25 +156,31 @@ bool IbusConfig::Initialize() {
   return LoadConfig(config_data);
 }
 
-bool IbusConfig::LoadConfig(const std::string &config_data) {
+bool IbusConfig::LoadConfig(absl::string_view config_data) {
   const bool valid_user_config = ParseConfig(config_data, config_);
+
+  protobuf_util::SanitizeMessageStrings(config_, [](absl::string_view src) {
+    // Limit the length of each string field to 100 bytes and remove ill-formed
+    // UTF-8 sequences and ASCII control characters.
+    return TextNormalizer::SanitizeText(src, 100);
+  });
 
   engine_xml_ = CreateEnginesXml(config_);
   if (!valid_user_config) {
-    engine_xml_ +=
+    absl::StrAppend(&engine_xml_,
         ("<!-- Failed to parse the user config. -->\n"
-         "<!-- Used the default setting instead. -->\n");
+         "<!-- Used the default setting instead. -->\n"));
   }
 
   return valid_user_config;
 }
 
-const std::string &IbusConfig::GetEnginesXml() const { return engine_xml_; }
+const std::string& IbusConfig::GetEnginesXml() const { return engine_xml_; }
 
-const ibus::Config &IbusConfig::GetConfig() const { return config_; }
+const ibus::Config& IbusConfig::GetConfig() const { return config_; }
 
-const std::string &IbusConfig::GetLayout(absl::string_view name) const {
-  for (const ibus::Engine &engine : config_.engines()) {
+const std::string& IbusConfig::GetLayout(absl::string_view name) const {
+  for (const ibus::Engine& engine : config_.engines()) {
     if (engine.name() == name) {
       return engine.layout();
     }
@@ -170,7 +190,7 @@ const std::string &IbusConfig::GetLayout(absl::string_view name) const {
 
 ibus::Engine::CompositionMode IbusConfig::GetCompositionMode(
     absl::string_view engine_name) const {
-  for (const ibus::Engine &engine : config_.engines()) {
+  for (const ibus::Engine& engine : config_.engines()) {
     if (engine.name() == engine_name) {
       return engine.composition_mode();
     }
@@ -183,7 +203,7 @@ bool IbusConfig::IsActiveOnLaunch() const {
     return config_.active_on_launch();
   }
 
-  // The default value is off as IBus team's recommentation.
+  // The default value is off as IBus team's recommendation.
   // https://github.com/google/mozc/issues/201
   return false;
 }
@@ -200,7 +220,7 @@ IbusConfig::GetMozcRendererCompatibleWaylandDesktopNames() const {
   if (!config_.has_mozc_renderer()) {
     return {};
   }
-  const auto &desktop_names =
+  const auto& desktop_names =
       config_.mozc_renderer().compatible_wayland_desktop_names();
   return {desktop_names.begin(), desktop_names.end()};
 }

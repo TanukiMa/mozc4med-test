@@ -34,12 +34,12 @@
 #include <windows.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
-#include "base/strings/zstring_view.h"
 
 namespace mozc {
 class WinUtil {
@@ -100,20 +100,20 @@ class WinUtil {
 
   // Returns true if |info| is filled with a valid file information that
   // describes |path|. |path| can be a directory or a file.
-  static bool GetFileSystemInfoFromPath(zwstring_view path,
+  static bool GetFileSystemInfoFromPath(std::wstring_view path,
                                         BY_HANDLE_FILE_INFORMATION* info);
 
   // Returns true if |left_path| and |right_path| are the same file system
   // object. This method takes hard-link into consideration.
   // Returns false if either |left_path| or |right_path| does not exist even
   // when |left_path| == |right_path|.
-  static bool AreEqualFileSystemObject(zwstring_view left_path,
-                                       zwstring_view right_path);
+  static bool AreEqualFileSystemObject(std::wstring_view left_path,
+                                       std::wstring_view right_path);
 
   // Returns true if the file or directory specified by |dos_path| exists and
   // its NT path is retrieved as |nt_path|. This function can work only on
   // Vista and later.
-  static bool GetNtPath(zwstring_view dos_path, std::wstring* nt_path);
+  static bool GetNtPath(std::wstring_view dos_path, std::wstring* nt_path);
 
   // Returns true if the process specified by |pid| exists and its *initial*
   // NT path is retrieved as |nt_path|. Note that even when the process path is
@@ -129,6 +129,18 @@ class WinUtil {
 
   // Returns true if the current process is restricted or in AppContainer.
   static bool IsProcessSandboxed();
+
+  // Returns the Windows system directory (e.g. "C:\\Windows\\System32"), or
+  // std::nullopt on failure. The result is computed once and cached.
+  static const std::optional<std::wstring>& GetSystem32Path();
+
+  // Returns the (x86) Program Files directory as UTF-8, or std::nullopt if it
+  // cannot be determined. The result is computed once and cached.
+  static const std::optional<std::string>& GetProgramFilesX86Path();
+
+  // Returns the LocalLow application data directory as UTF-8, or std::nullopt
+  // if it cannot be determined. The result is computed once and cached.
+  static const std::optional<std::string>& GetLocalAppDataPath();
 
   // Execute ShellExecute API with given parameters on the system directory,
   // which is expected to be more appropriate than tha directory where the

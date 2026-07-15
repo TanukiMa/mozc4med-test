@@ -38,12 +38,23 @@
 #include "testing/mozctest.h"
 #endif  // __ANDROID__
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_OSX
+#include <string>
+
+#include "absl/strings/str_cat.h"
+#include "base/file_util.h"
+#include "base/system_util.h"
+#include "testing/mozctest.h"
+#endif  // TARGET_OS_OSX
+#endif  // __APPLE__
+
 #ifdef _WIN32
 #include <bit>
 
 #include "absl/container/flat_hash_map.h"
 #include "base/bits.h"
-#include "base/singleton.h"
 #include "base/win32/win_api_test_helper.h"
 #endif  // _WIN32
 
@@ -93,14 +104,13 @@ bool TryGetKnownKey(HKEY key, LPCWSTR sub_key, HKEY* result_key) {
   return false;
 }
 
-// Win32 registry emulator for unit testing.  To separate internal state,
-// set unique id at the template parameter.
-// This template class is mainly used for migration codes of http://b/2451942
-// and http://b/2452672
-template <int Id>
-class RegistryEmulator {
+// Win32 registry emulator for unit testing. Can be safely used only in a
+// single thread test scenario. At most one instance can be created at the same
+// time in the same process.
+// This class is mainly used for migration codes of http://b/2451942 and
+// http://b/2452672
+class SingleThreadedRegistryEmulator {
  public:
-  template <int Id>
   class PropertySelector {
    public:
     PropertySelector() : run_level_(kRunLevelMedium) {}
@@ -132,8 +142,9 @@ class RegistryEmulator {
     absl::flat_hash_map<HKEY, DWORD> usagestats_map_;
     int run_level_;
   };
-  typedef PropertySelector<Id> Property;
-  RegistryEmulator() {
+  typedef PropertySelector Property;
+  SingleThreadedRegistryEmulator() {
+    current_ = &property_;
     std::vector<WinAPITestHelper::HookRequest> requests;
     requests.push_back(
         DEFINE_HOOK("advapi32.dll", RegCreateKeyExW, TestRegCreateKeyExW));
@@ -151,16 +162,16 @@ class RegistryEmulator {
         WinAPITestHelper::DoHook(::GetModuleHandle(nullptr), requests);
   }
 
-  ~RegistryEmulator() {
+  ~SingleThreadedRegistryEmulator() {
     WinAPITestHelper::RestoreHook(restore_info_);
     restore_info_ = nullptr;
+    current_ = nullptr;
   }
   static void SetRunLevel(int run_level) {
-    mozc::Singleton<Property>::get()->set_run_level(run_level);
+    current_->set_run_level(run_level);
   }
   static bool HasUsagestatsValue(HKEY key) {
-    if (!mozc::Singleton<Property>::get()->contains_key_in_usagestats_map(
-            key)) {
+    if (!current_->contains_key_in_usagestats_map(key)) {
       return false;
     }
     return true;
@@ -170,8 +181,7 @@ class RegistryEmulator {
       return false;
     }
     if (value != nullptr) {
-      *value =
-          mozc::Singleton<Property>::get()->get_entry_from_usagestats_map(key);
+      *value = current_->get_entry_from_usagestats_map(key);
     }
     return true;
   }
@@ -179,31 +189,31 @@ class RegistryEmulator {
     // Note that kHKLM_ClientStateMedium does not require admin rights.
     if (key == kHKLM_ClientState) {
       // Requires admin rights to update the value
-      if (mozc::Singleton<Property>::get()->run_level() < kRunLevelHigh) {
+      if (current_->run_level() < kRunLevelHigh) {
         return false;
       }
     } else if (key == kHKLM_ClientStateMedium) {
-      if (mozc::Singleton<Property>::get()->run_level() < kRunLevelMedium) {
+      if (current_->run_level() < kRunLevelMedium) {
         return false;
       }
     } else if (key == kHKCU_ClientState) {
-      if (mozc::Singleton<Property>::get()->run_level() < kRunLevelMedium) {
+      if (current_->run_level() < kRunLevelMedium) {
         return false;
       }
     }
     return true;
   }
   static void SetUsagestatsValue(HKEY key, DWORD value) {
-    mozc::Singleton<Property>::get()->set_entry_to_usagestats_map(key, value);
+    current_->set_entry_to_usagestats_map(key, value);
   }
   static void DeleteUsagestatsValue(HKEY key) {
     if (!HasUsagestatsValue(key)) {
       return;
     }
-    mozc::Singleton<Property>::get()->erase_entry_from_usagestats_map(key);
+    current_->erase_entry_from_usagestats_map(key);
   }
   static void ClearUsagestatsValue() {
-    mozc::Singleton<Property>::get()->clear_usagestats_map();
+    current_->clear_usagestats_map();
   }
   static LSTATUS WINAPI TestRegCreateKeyExW(
       HKEY key, LPCWSTR sub_key, DWORD reserved, LPWSTR class_name,
@@ -266,7 +276,9 @@ class RegistryEmulator {
     DeleteUsagestatsValue(key);
     return ERROR_SUCCESS;
   }
+  Property property_;
   WinAPITestHelper::RestoreInfoHandle restore_info_;
+  inline static Property* current_ = nullptr;
 };
 }  // namespace
 
@@ -274,7 +286,7 @@ class RegistryEmulator {
 TEST(StatsConfigUtilTestWin, IsEnabledIgnoresRegistrySettings) {
   // In dev channel, settings in the registry are simply ignored and
   // StatsConfigUtil::IsEnabled always returns true.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelHigh);
 
   // (kHKLM_ClientState, kHKLM_ClientStateMedium) == (None, None)
@@ -328,7 +340,7 @@ TEST(StatsConfigUtilTestWin, IsEnabledIgnoresRegistrySettings) {
 
 TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelHighInDevChannel) {
   // In dev channel, StatsConfigUtil::SetEnabled always returns true.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelHigh);
   DWORD value = 0;
 
@@ -351,7 +363,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelHighInDevChannel) {
 
 TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelMediumInDevChannel) {
   // In dev channel, StatsConfigUtil::SetEnabled always returns true.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelMedium);
   DWORD value = 0;
 
@@ -406,7 +418,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelMediumInDevChannel) {
 
 TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelLowInDevChannel) {
   // In dev channel, StatsConfigUtil::SetEnabled always returns true.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelLow);
   DWORD value = 0;
 
@@ -462,7 +474,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelLowInDevChannel) {
 TEST(StatsConfigUtilTestWin, SetEnabledNeverFailsForRunLevelMedium) {
   // In dev channel, StatsConfigUtil::SetEnabled does not update the
   // the registry but always returns true.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelMedium);
   EXPECT_TRUE(StatsConfigUtil::SetEnabled(true));
   EXPECT_TRUE(StatsConfigUtil::SetEnabled(false));
@@ -471,7 +483,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledNeverFailsForRunLevelMedium) {
 TEST(StatsConfigUtilTestWin, SetEnabledNeverFailsForRunLevelLow) {
   // In dev channel, StatsConfigUtil::SetEnabled does not update the
   // the registry but always returns true.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelLow);
   EXPECT_TRUE(StatsConfigUtil::SetEnabled(true));
   EXPECT_TRUE(StatsConfigUtil::SetEnabled(false));
@@ -482,7 +494,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledNeverFailsForRunLevelLow) {
 TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelHigh) {
   // In beta and stable channel, StatsConfigUtil::SetEnabled requires
   // sufficient rights.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelHigh);
   DWORD value = 0;
 
@@ -508,7 +520,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelHigh) {
 TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelMedium) {
   // In beta and stable channels, StatsConfigUtil::SetEnabled requires
   // sufficient rights.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelMedium);
   DWORD value = 0;
 
@@ -564,7 +576,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelMedium) {
 TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelLow) {
   // In beta and stable channels, StatsConfigUtil::SetEnabled requires
   // sufficient rights.
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelLow);
   DWORD value = 0;
 
@@ -620,7 +632,7 @@ TEST(StatsConfigUtilTestWin, SetEnabledForRunLevelLow) {
 }
 
 TEST(StatsConfigUtilTestWin, IsEnabled) {
-  RegistryEmulator<__COUNTER__> test;
+  SingleThreadedRegistryEmulator test;
   test.SetRunLevel(kRunLevelHigh);
 
   // (kHKLM_ClientState, kHKLM_ClientStateMedium) == (None, None)
@@ -673,6 +685,62 @@ TEST(StatsConfigUtilTestWin, IsEnabled) {
 }
 #endif  // !CHANNEL_DEV
 #endif  // _WIN32
+
+#ifdef TARGET_OS_OSX
+class StatsConfigUtilTestMac : public ::mozc::testing::TestWithTempUserProfile {
+ protected:
+  std::string ConfigFilePath() const {
+    return absl::StrCat(SystemUtil::GetUserProfileDirectory(),
+                        "/.usagestats.db");
+  }
+};
+
+#ifdef CHANNEL_DEV
+TEST_F(StatsConfigUtilTestMac, IsEnabledIsAlwaysTrueInDevChannel) {
+  // In dev channel, IsEnabled always returns true regardless of the file's
+  // state.
+  EXPECT_TRUE(StatsConfigUtil::IsEnabled());
+  // SetEnabled is also a no-op that always returns true.
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(false));
+  EXPECT_TRUE(StatsConfigUtil::IsEnabled());
+}
+
+TEST_F(StatsConfigUtilTestMac, SetEnabledNeverWritesFileInDevChannel) {
+  // In dev channel, SetEnabled must not touch the on-disk config file.
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(true));
+  EXPECT_FALSE(FileUtil::FileExists(ConfigFilePath()).ok());
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(false));
+  EXPECT_FALSE(FileUtil::FileExists(ConfigFilePath()).ok());
+}
+#else   // !CHANNEL_DEV
+TEST_F(StatsConfigUtilTestMac, IsEnabledDefaultsToFalse) {
+  // Without a config file, IsEnabled returns false.
+  ASSERT_FALSE(FileUtil::FileExists(ConfigFilePath()).ok());
+  EXPECT_FALSE(StatsConfigUtil::IsEnabled());
+}
+
+TEST_F(StatsConfigUtilTestMac, SetEnabledTrueRoundTrip) {
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(true));
+  EXPECT_TRUE(FileUtil::FileExists(ConfigFilePath()).ok());
+  EXPECT_TRUE(StatsConfigUtil::IsEnabled());
+}
+
+TEST_F(StatsConfigUtilTestMac, SetEnabledFalseRoundTrip) {
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(false));
+  EXPECT_TRUE(FileUtil::FileExists(ConfigFilePath()).ok());
+  EXPECT_FALSE(StatsConfigUtil::IsEnabled());
+}
+
+TEST_F(StatsConfigUtilTestMac, SetEnabledOverwritesPreviousValue) {
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(true));
+  EXPECT_TRUE(StatsConfigUtil::IsEnabled());
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(false));
+  EXPECT_FALSE(StatsConfigUtil::IsEnabled());
+  EXPECT_TRUE(StatsConfigUtil::SetEnabled(true));
+  EXPECT_TRUE(StatsConfigUtil::IsEnabled());
+}
+#endif  // CHANNEL_DEV
+#endif  // TARGET_OS_OSX
 
 #ifdef __ANDROID__
 TEST(StatsConfigUtilTestAndroid, DefaultValueTest) {

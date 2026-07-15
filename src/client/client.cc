@@ -48,7 +48,6 @@
 #include "base/file_stream.h"
 #include "base/file_util.h"
 #include "base/process.h"
-#include "base/singleton.h"
 #include "base/system_util.h"
 #include "base/version.h"
 #include "base/vlog.h"
@@ -98,7 +97,7 @@ constexpr absl::Duration kDeleteSessionOnDestructorTimeout = absl::Seconds(1);
 
 Client::Client()
     : id_(0),
-      server_launcher_(new ServerLauncher),
+      server_launcher_(std::make_unique<ServerLauncher>()),
       timeout_(kDefaultTimeout),
       server_status_(SERVER_UNKNOWN),
       server_protocol_version_(0),
@@ -432,10 +431,6 @@ void Client::EnableCascadingWindow(const bool enable) {
 
 void Client::set_timeout(absl::Duration timeout) { timeout_ = timeout; }
 
-void Client::set_server_program(const absl::string_view program_path) {
-  server_launcher_->set_server_program(program_path);
-}
-
 void Client::set_suppress_error_dialog(bool suppress) {
   server_launcher_->set_suppress_error_dialog(suppress);
 }
@@ -573,7 +568,6 @@ bool Client::PingServer() const {
   }
 
   commands::Input input;
-  commands::Output output;
 
   InitInput(&input);
   input.set_type(commands::Input::NO_OPERATION);
@@ -595,7 +589,10 @@ bool Client::PingServer() const {
   // Serialize
   std::string request;
   std::string response;
-  input.SerializeToString(&request);
+  if (!input.SerializeToString(&request)) {
+    LOG(ERROR) << "SerializeToString failed";
+    return false;
+  }
 
   if (!client->Call(request, &response, timeout_)) {
     LOG(ERROR) << "IPCClient::Call failed: " << client->GetLastIPCError();
@@ -643,7 +640,10 @@ bool Client::Call(const commands::Input &input, commands::Output *output) {
 
   // Serialize
   std::string request;
-  input.SerializeToString(&request);
+  if (!input.SerializeToString(&request)) {
+    LOG(ERROR) << "SerializeToString failed";
+    return false;
+  }
 
   // Call IPC
   std::unique_ptr<IPCClientInterface> client(client_factory_->NewClient(
@@ -851,7 +851,7 @@ bool Client::LaunchToolWithProtoBuf(const commands::Output &output) {
   return LaunchTool(mode, "");
 }
 
-bool Client::LaunchTool(const std::string &mode,
+bool Client::LaunchTool(absl::string_view mode,
                         const absl::string_view extra_arg) {
   // Don't execute any child process if the parent process is not
   // in proper runlevel.
@@ -911,7 +911,7 @@ bool Client::LaunchTool(const std::string &mode,
   return true;
 }
 
-bool Client::OpenBrowser(const std::string &url) {
+bool Client::OpenBrowser(absl::string_view url) {
   if (!IsValidRunLevel()) {
     return false;
   }
@@ -925,19 +925,14 @@ bool Client::OpenBrowser(const std::string &url) {
 }
 
 namespace {
-class DefaultClientFactory : public ClientFactoryInterface {
- public:
-  std::unique_ptr<ClientInterface> NewClient() override {
-    return std::make_unique<Client>();
-  }
-};
 
 ClientFactoryInterface *g_client_factory = nullptr;
+
 }  // namespace
 
 std::unique_ptr<ClientInterface> ClientFactory::NewClient() {
   if (g_client_factory == nullptr) {
-    return Singleton<DefaultClientFactory>::get()->NewClient();
+    return std::make_unique<Client>();
   } else {
     return g_client_factory->NewClient();
   }

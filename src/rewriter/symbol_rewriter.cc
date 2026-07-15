@@ -46,12 +46,12 @@
 #include "absl/strings/string_view.h"
 #include "base/japanese_util.h"
 #include "base/strings/assign.h"
+#include "base/strings/japanese.h"
 #include "base/util.h"
 #include "base/vlog.h"
 #include "converter/attribute.h"
 #include "converter/candidate.h"
 #include "converter/segments.h"
-#include "data_manager/data_manager.h"
 #include "data_manager/serialized_dictionary.h"
 #include "protocol/commands.pb.h"
 #include "protocol/config.pb.h"
@@ -67,11 +67,7 @@
 namespace mozc {
 
 namespace {
-// Try to start inserting symbols from this position
-constexpr size_t kDefaultOffset = 3;
 constexpr size_t kOffsetForSymbolKey = 1;
-// Number of symbols which are inserted to first part
-constexpr size_t kMaxInsertToMedium = 15;
 
 size_t GetOffset(const ConversionRequest& request, absl::string_view key) {
   const bool is_symbol_key =
@@ -314,6 +310,14 @@ void InsertCandidates(size_t default_offset, int32_t promotion_size,
   segment->insert_candidates(segment->candidates_size(), std::move(candidates));
 }
 
+SerializedDictionary::IterRange Lookup(const SerializedDictionary& dictionary,
+                                       const absl::string_view key) {
+  // Normalize the key to half-width and lowercase.
+  std::string normalized_key = japanese::FullWidthAsciiToHalfWidthAscii(key);
+  Util::LowerString(&normalized_key);
+  return dictionary.equal_range(normalized_key);
+}
+
 }  // namespace
 
 bool SymbolRewriter::RewriteEachCandidate(const ConversionRequest& request,
@@ -324,7 +328,7 @@ bool SymbolRewriter::RewriteEachCandidate(const ConversionRequest& request,
                                      .symbol_rewriter_promotion_size();
   for (Segment& segment : segments->conversion_segments()) {
     absl::string_view key = segment.key();
-    const SerializedDictionary::IterRange range = dictionary_->equal_range(key);
+    const SerializedDictionary::IterRange range = Lookup(*dictionary_, key);
     if (range.first == range.second) {
       continue;
     }
@@ -348,7 +352,7 @@ bool SymbolRewriter::RewriteEntireCandidate(const ConversionRequest& request,
   }
 
   absl::string_view key = segments->conversion_segment(0).key();
-  const SerializedDictionary::IterRange range = dictionary_->equal_range(key);
+  const SerializedDictionary::IterRange range = Lookup(*dictionary_, key);
   if (range.first == range.second) {
     return false;
   }
@@ -385,7 +389,7 @@ SymbolRewriter::CheckResizeSegmentsRequest(const ConversionRequest& request,
   }
   const uint8_t segment_size = static_cast<uint8_t>(key_len);
 
-  const SerializedDictionary::IterRange range = dictionary_->equal_range(key);
+  const SerializedDictionary::IterRange range = Lookup(*dictionary_, key);
   if (range.first == range.second) {
     return std::nullopt;
   }
@@ -397,9 +401,8 @@ SymbolRewriter::CheckResizeSegmentsRequest(const ConversionRequest& request,
   return resize_request;
 }
 
-SymbolRewriter::SymbolRewriter(const DataManager& data_manager) {
-  absl::string_view token_array_data, string_array_data;
-  data_manager.GetSymbolRewriterData(&token_array_data, &string_array_data);
+SymbolRewriter::SymbolRewriter(absl::string_view token_array_data,
+                               absl::string_view string_array_data) {
   DCHECK(SerializedDictionary::VerifyData(token_array_data, string_array_data));
   dictionary_ = std::make_unique<SerializedDictionary>(token_array_data,
                                                        string_array_data);

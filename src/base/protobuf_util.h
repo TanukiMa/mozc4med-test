@@ -27,34 +27,28 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "dictionary/file/codec_util.h"
+#ifndef MOZC_BASE_PROTOBUF_UTIL_H_
+#define MOZC_BASE_PROTOBUF_UTIL_H_
 
-#include <cstdint>
-#include <ostream>
+#include <optional>
+#include <string>
 
-#include "absl/log/check.h"
+#include "absl/functional/function_ref.h"
+#include "absl/strings/string_view.h"
+#include "base/protobuf/message.h"
 
 namespace mozc {
-namespace dictionary {
-namespace filecodec_util {
+namespace protobuf_util {
 
-void WriteInt32(int32_t value, std::ostream *ofs) {
-  DCHECK(ofs);
-  ofs->write(reinterpret_cast<const char *>(&value), sizeof(value));
-}
+// Applies `sanitizer` to all string fields in the given `message` (including
+// nested messages). If `sanitizer` returns a string, the field is replaced.
+// If it returns std::nullopt, the field is left unchanged.
+void SanitizeMessageStrings(
+    protobuf::Message& message,
+    absl::FunctionRef<std::optional<std::string>(absl::string_view)>
+        sanitizer);
 
-int RoundUp4(int length) {
-  const int rem = (length % 4);
-  return length + ((4 - rem) % 4);
-}
-
-void Pad4(int length, std::ostream *ofs) {
-  DCHECK(ofs);
-  for (int i = length; (i % 4) != 0; ++i) {
-    (*ofs) << '\0';
-  }
-}
-
-}  // namespace filecodec_util
-}  // namespace dictionary
+}  // namespace protobuf_util
 }  // namespace mozc
+
+#endif  // MOZC_BASE_PROTOBUF_UTIL_H_

@@ -33,6 +33,8 @@
 #include <cstdint>
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace mozc {
 
 // SystemUtil class supports utility methods which are related to OSes or user
@@ -83,9 +85,6 @@ class SystemUtil {
   // <server directory>/documents but it can change among platforms.
   static std::string GetDocumentDirectory();
 
-  // Returns the directory path crash dumps are stored.
-  static std::string GetCrashReportDirectory();
-
   // return the username.  This function's name was GetUserName.
   // Since Windows reserves GetUserName as a macro, we have changed
   // the name to GetUserNameAsString.
@@ -103,24 +102,6 @@ class SystemUtil {
   static std::string GetDesktopNameAsString();
 
 #ifdef _WIN32
-  // From an early stage of the development of Mozc, we have somehow abused
-  // CHECK macro assuming that any failure of fundamental APIs like
-  // ::SHGetFolderPathW or ::SHGetKnownFolderPathis is worth being notified
-  // as a crash.  But the circumstances have been changed.  As filed as
-  // b/3216603, increasing number of instances of various applications begin
-  // to use their own sandbox technology, where these kind of fundamental APIs
-  // are far more likely to fail with an unexpected error code.
-  // EnsureVitalImmutableDataIsAvailable is a simple fail-fast mechanism to
-  // this situation.  This function simply returns false instead of making
-  // the process crash if any of following functions cannot work as expected.
-  // - SystemDirectoryCache
-  // - ProgramFilesX86Cache
-  // - LocalAppDataDirectoryCache
-  // TODO(taku,yukawa): Implement more robust and reliable mechanism against
-  //   sandboxed environment, where such kind of fundamental APIs are far more
-  //   likely to fail.  See b/3216603.
-  static bool EnsureVitalImmutableDataIsAvailable();
-
   // return system directory. If failed, return nullptr.
   // You need not to delete the returned pointer.
   // This function is thread safe.
@@ -136,6 +117,12 @@ class SystemUtil {
 
   // retrieve total physical memory. returns 0 if any error occurs.
   static uint64_t GetTotalPhysicalMemory();
+
+  // Sets program invocation name to use it for runfiles directory.
+  static void SetProgramInvocationName(absl::string_view name);
+
+  // Returns argv[0] + ".runfiles".
+  static std::string GetProgramRunfilesDirectory();
 };
 
 }  // namespace mozc

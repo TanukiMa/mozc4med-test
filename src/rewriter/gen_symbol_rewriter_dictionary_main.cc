@@ -41,6 +41,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -64,6 +65,8 @@
 #include "base/vlog.h"
 #include "data_manager/data_manager.h"
 #include "data_manager/serialized_dictionary.h"
+#include "dictionary/pos_matcher.h"
+#include "dictionary/user_pos.h"
 #include "rewriter/dictionary_generator.h"
 
 ABSL_FLAG(std::string, sorting_table, "", "sorting table file");
@@ -935,8 +938,8 @@ bool IsJisX0208OrAllowListed(absl::string_view str) {
 
 using SortingKeyMap = absl::flat_hash_map<std::string, uint16_t>;
 
-SortingKeyMap CreateSortingKeyMap(const std::string& auto_file,
-                                  const std::string& rule_file) {
+SortingKeyMap CreateSortingKeyMap(absl::string_view auto_file,
+                                  absl::string_view rule_file) {
   SortingKeyMap sorting_keys;
   std::string line;
   int sorting_key = 0;
@@ -998,24 +1001,24 @@ void AddSymbolToDictionary(const absl::string_view pos,
     sorting_key = it->second;
   }
 
+  absl::flat_hash_set<std::string> normalized_keys;
   for (const std::string& key : keys) {
-    const rewriter::Token& token = dictionary.AddToken(
-        {sorting_key, key, std::string(value), std::string(pos),
-         std::string(description), std::string(additional_description)});
+    std::string normalized_key = japanese::FullWidthAsciiToHalfWidthAscii(key);
+    Util::LowerString(&normalized_key);
+    normalized_keys.insert(normalized_key);
+  }
 
-    std::string fw_key = japanese::HalfWidthAsciiToFullWidthAscii(token.key);
-    if (fw_key != key) {
-      rewriter::Token fw_token = token;
-      fw_token.key = std::move(fw_key);
-      dictionary.AddToken(std::move(fw_token));
-    }
+  for (const std::string& key : normalized_keys) {
+    dictionary.AddToken({sorting_key, key, std::string(value), std::string(pos),
+                         std::string(description),
+                         std::string(additional_description)});
   }
 }
 
 // Read dic:
-void MakeDictionary(const std::string& symbol_dictionary_file,
-                    const std::string& sorting_map_file,
-                    const std::string& ordering_rule_file,
+void MakeDictionary(absl::string_view symbol_dictionary_file,
+                    absl::string_view sorting_map_file,
+                    absl::string_view ordering_rule_file,
                     rewriter::DictionaryGenerator& dictionary) {
   absl::flat_hash_set<std::string> seen;
   SortingKeyMap sorting_keys =
@@ -1089,7 +1092,13 @@ int main(int argc, char** argv) {
           absl::GetFlag(FLAGS_user_pos_manager_data), kMagicNumber);
   CHECK_OK(data_manager);
 
-  mozc::rewriter::DictionaryGenerator dictionary(*data_manager.value());
+  const auto user_pos = std::make_from_tuple<mozc::dictionary::UserPos>(
+      data_manager.value()->GetUserPosData());
+  const mozc::dictionary::PosMatcher pos_matcher(
+      data_manager.value()->GetPosMatcherData());
+
+  mozc::rewriter::DictionaryGenerator dictionary(std::move(user_pos),
+                                                 std::move(pos_matcher));
   mozc::MakeDictionary(absl::GetFlag(FLAGS_input),
                        absl::GetFlag(FLAGS_sorting_table),
                        absl::GetFlag(FLAGS_ordering_rule), dictionary);

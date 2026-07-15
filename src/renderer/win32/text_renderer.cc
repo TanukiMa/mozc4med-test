@@ -41,6 +41,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -51,7 +52,7 @@
 #include "absl/types/span.h"
 #include "base/coordinates.h"
 #include "protocol/renderer_style.pb.h"
-#include "renderer/renderer_style_handler.h"
+#include "renderer/win32/win32_dpi_util.h"
 #include "renderer/win32/win32_font_util.h"
 
 namespace mozc {
@@ -59,7 +60,6 @@ namespace renderer {
 namespace win32 {
 
 using ::mozc::renderer::RendererStyle;
-using ::mozc::renderer::RendererStyleHandler;
 
 namespace {
 
@@ -67,42 +67,33 @@ CRect ToCRect(const Rect& rect) {
   return CRect(rect.Left(), rect.Top(), rect.Right(), rect.Bottom());
 }
 
-COLORREF GetTextColor(TextRenderer::FONT_TYPE type) {
+COLORREF ToColorRef(const RendererStyle::RGBAColor& color) {
+  return RGB(color.r(), color.g(), color.b());
+}
+
+COLORREF GetTextColor(TextRenderer::FONT_TYPE type, uint32_t dpi) {
+  RendererStyle style;
+  GetScaledRendererStyle(&style, dpi);
+  const RendererStyle::InfolistStyle& infostyle = style.infolist_style();
+
   switch (type) {
     case TextRenderer::FONTSET_SHORTCUT:
-      return RGB(0x61, 0x61, 0x61);
+      return ToColorRef(style.shortcut_style().foreground_color());
     case TextRenderer::FONTSET_CANDIDATE:
-      return RGB(0x00, 0x00, 0x00);
+      return ToColorRef(style.candidate_style().foreground_color());
     case TextRenderer::FONTSET_DESCRIPTION:
-      return RGB(0x88, 0x88, 0x88);
+      return ToColorRef(style.description_style().foreground_color());
     case TextRenderer::FONTSET_FOOTER_INDEX:
-      return RGB(0x4c, 0x4c, 0x4c);
     case TextRenderer::FONTSET_FOOTER_LABEL:
-      return RGB(0x4c, 0x4c, 0x4c);
+      return ToColorRef(style.footer_style().foreground_color());
     case TextRenderer::FONTSET_FOOTER_SUBLABEL:
-      return RGB(0xA7, 0xA7, 0xA7);
-    default:
-      break;
-  }
-
-  // TODO(horo): Not only infolist fonts but also candidate fonts
-  //             should be created from RendererStyle
-  RendererStyle style;
-  RendererStyleHandler::GetRendererStyle(&style);
-  const auto& infostyle = style.infolist_style();
-  switch (type) {
+      return ToColorRef(style.footer_sub_label_style().foreground_color());
     case TextRenderer::FONTSET_INFOLIST_CAPTION:
-      return RGB(infostyle.caption_style().foreground_color().r(),
-                 infostyle.caption_style().foreground_color().g(),
-                 infostyle.caption_style().foreground_color().b());
+      return ToColorRef(infostyle.caption_style().foreground_color());
     case TextRenderer::FONTSET_INFOLIST_TITLE:
-      return RGB(infostyle.title_style().foreground_color().r(),
-                 infostyle.title_style().foreground_color().g(),
-                 infostyle.title_style().foreground_color().b());
+      return ToColorRef(infostyle.title_style().foreground_color());
     case TextRenderer::FONTSET_INFOLIST_DESCRIPTION:
-      return RGB(infostyle.description_style().foreground_color().r(),
-                 infostyle.description_style().foreground_color().g(),
-                 infostyle.description_style().foreground_color().b());
+      return ToColorRef(infostyle.description_style().foreground_color());
     default:
       break;
   }
@@ -111,8 +102,8 @@ COLORREF GetTextColor(TextRenderer::FONT_TYPE type) {
   return RGB(0, 0, 0);
 }
 
-LOGFONT GetLogFont(TextRenderer::FONT_TYPE type) {
-  LOGFONT font = GetMessageBoxLogFont();
+LOGFONT GetLogFont(TextRenderer::FONT_TYPE type, uint32_t dpi) {
+  LOGFONT font = GetMessageBoxLogFont(dpi);
 
   switch (type) {
     case TextRenderer::FONTSET_SHORTCUT: {
@@ -139,7 +130,7 @@ LOGFONT GetLogFont(TextRenderer::FONT_TYPE type) {
   // TODO(horo): Not only infolist fonts but also candidate fonts
   //             should be created from RendererStyle
   RendererStyle style;
-  RendererStyleHandler::GetRendererStyle(&style);
+  GetScaledRendererStyle(&style, dpi);
   const auto& infostyle = style.infolist_style();
   switch (type) {
     case TextRenderer::FONTSET_INFOLIST_CAPTION: {
@@ -191,9 +182,10 @@ DWORD GetGdiDrawTextStyle(TextRenderer::FONT_TYPE type) {
 
 class GdiTextRenderer : public TextRenderer {
  public:
-  GdiTextRenderer()
+  explicit GdiTextRenderer(uint32_t dpi)
       : render_info_(SIZE_OF_FONT_TYPE),
-        mem_dc_(::CreateCompatibleDC(nullptr)) {
+        mem_dc_(::CreateCompatibleDC(nullptr)),
+        dpi_(dpi) {
     OnThemeChanged();
   }
 
@@ -216,11 +208,19 @@ class GdiTextRenderer : public TextRenderer {
 
     for (size_t i = 0; i < SIZE_OF_FONT_TYPE; ++i) {
       const auto font_type = static_cast<FONT_TYPE>(i);
-      const auto& log_font = GetLogFont(font_type);
+      const auto& log_font = GetLogFont(font_type, dpi_);
       render_info_[i].style = GetGdiDrawTextStyle(font_type);
       render_info_[i].font.reset(::CreateFontIndirectW(&log_font));
-      render_info_[i].color = GetTextColor(font_type);
+      render_info_[i].color = GetTextColor(font_type, dpi_);
     }
+  }
+
+  void OnDpiChanged(uint32_t dpi) override {
+    if (dpi == dpi_) {
+      return;
+    }
+    dpi_ = dpi;
+    OnThemeChanged();
   }
 
   Size MeasureString(FONT_TYPE font_type,
@@ -270,6 +270,7 @@ class GdiTextRenderer : public TextRenderer {
 
   std::vector<RenderInfo> render_info_;
   wil::unique_hdc mem_dc_;
+  uint32_t dpi_;
 };
 
 class DirectWriteTextRenderer : public TextRenderer {
@@ -277,14 +278,15 @@ class DirectWriteTextRenderer : public TextRenderer {
   DirectWriteTextRenderer(
       wil::com_ptr_nothrow<ID2D1Factory> d2d2_factory,
       wil::com_ptr_nothrow<IDWriteFactory> dwrite_factory,
-      wil::com_ptr_nothrow<IDWriteGdiInterop> dwrite_interop)
+      wil::com_ptr_nothrow<IDWriteGdiInterop> dwrite_interop, uint32_t dpi)
       : d2d2_factory_(std::move(d2d2_factory)),
         dwrite_factory_(std::move(dwrite_factory)),
-        dwrite_interop_(std::move(dwrite_interop)) {
+        dwrite_interop_(std::move(dwrite_interop)),
+        dpi_(dpi) {
     OnThemeChanged();
   }
 
-  static std::unique_ptr<DirectWriteTextRenderer> Create() {
+  static std::unique_ptr<DirectWriteTextRenderer> Create(uint32_t dpi) {
     HRESULT hr = S_OK;
     wil::com_ptr_nothrow<ID2D1Factory> d2d_factory;
     hr = ::D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
@@ -305,8 +307,9 @@ class DirectWriteTextRenderer : public TextRenderer {
     if (FAILED(hr)) {
       return nullptr;
     }
-    return std::make_unique<DirectWriteTextRenderer>(
-        std::move(d2d_factory), std::move(dwrite_factory), std::move(interop));
+    return std::make_unique<DirectWriteTextRenderer>(std::move(d2d_factory),
+                                                     std::move(dwrite_factory),
+                                                     std::move(interop), dpi);
   }
 
  private:
@@ -325,8 +328,8 @@ class DirectWriteTextRenderer : public TextRenderer {
 
     for (size_t i = 0; i < SIZE_OF_FONT_TYPE; ++i) {
       const auto font_type = static_cast<FONT_TYPE>(i);
-      const auto& log_font = GetLogFont(font_type);
-      render_info_[i].color = GetTextColor(font_type);
+      const auto& log_font = GetLogFont(font_type, dpi_);
+      render_info_[i].color = GetTextColor(font_type, dpi_);
       render_info_[i].format = CreateFormat(log_font);
       render_info_[i].format_to_render = CreateFormat(log_font);
       const auto style = GetGdiDrawTextStyle(font_type);
@@ -344,6 +347,14 @@ class DirectWriteTextRenderer : public TextRenderer {
         render_font->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_TRAILING);
       }
     }
+  }
+
+  void OnDpiChanged(uint32_t dpi) override {
+    if (dpi == dpi_) {
+      return;
+    }
+    dpi_ = dpi;
+    OnThemeChanged();
   }
 
   // Retrieves the bounding box for a given string.
@@ -529,18 +540,19 @@ class DirectWriteTextRenderer : public TextRenderer {
   mutable wil::com_ptr_nothrow<ID2D1DCRenderTarget> dc_render_target_;
   wil::com_ptr_nothrow<IDWriteGdiInterop> dwrite_interop_;
   std::vector<RenderInfo> render_info_;
+  uint32_t dpi_;
 };
 
 }  // namespace
 
 // static
-std::unique_ptr<TextRenderer> TextRenderer::Create() {
+std::unique_ptr<TextRenderer> TextRenderer::Create(uint32_t dpi) {
   std::unique_ptr<TextRenderer> dwrite_text_renderer =
-      DirectWriteTextRenderer::Create();
+      DirectWriteTextRenderer::Create(dpi);
   if (dwrite_text_renderer != nullptr) {
     return dwrite_text_renderer;
   }
-  return std::make_unique<GdiTextRenderer>();
+  return std::make_unique<GdiTextRenderer>(dpi);
 }
 
 }  // namespace win32

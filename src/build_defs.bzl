@@ -74,6 +74,13 @@ def _copts_unsigned_char():
         "//conditions:default": ["-funsigned-char"],
     })
 
+def _win32_default_manifest_deps():
+    """Returns deps to embed the default Win32 manifest settings on Windows."""
+    return select({
+        "@platforms//os:windows": ["//bazel/win32:win32_default_manifest"],
+        "//conditions:default": [],
+    })
+
 def _update_visibility(visibility = None):
     """
     Returns updated visibility. This is temporarily used for the code location migration.
@@ -100,13 +107,38 @@ register_extension_info(
     label_regex_for_dep = "{extension_name}",
 )
 
-def mozc_cc_binary(deps = [], copts = [], **kwargs):
+def mozc_cc_binary(deps = [], copts = [], linkopts = [], enable_win32_default_manifest = True, **kwargs):
+    """cc_binary wrapper adding default dependecies such as '//:macro'.
+
+    Args:
+      deps: deps for cc_binary.  //:macro is added.
+      copts: copts for cc_binary.
+      linkopts: linkopts for cc_binary.
+      enable_win32_default_manifest: optional. If True (default), embed the
+          default Win32 manifest settings on Windows. Ignored for shared
+          libraries, where an application manifest is not applicable.
+      **kwargs: other args for cc_binary.
     """
-    cc_binary wrapper adding //:macro dependecny.
-    """
+    win32_default_manifest_deps = []
+
+    # Skip shared libraries (linkshared = True). An application manifest is
+    # embedded as the RT_MANIFEST resource with ID 1, which the loader honors
+    # only for the executable (.exe), not for DLLs, so embedding it into a
+    # shared library would have no effect.
+    if enable_win32_default_manifest and not kwargs.get("linkshared"):
+        win32_default_manifest_deps = _win32_default_manifest_deps()
     cc_binary(
-        deps = deps + ["//:macro"],
+        deps = deps + ["//:macro"] + win32_default_manifest_deps,
         copts = copts + _copts_unsigned_char(),
+        linkopts = linkopts + mozc_select(
+            wasm = [
+                "-s EXPORTED_RUNTIME_METHODS=['ccall', 'cwrap', 'FS']",
+                "-s MODULARIZE=1",
+                "-s EXPORT_NAME='MozcConverter'",
+                "-s ALLOW_MEMORY_GROWTH=1",
+            ],
+            default = [],
+        ),
         **kwargs
     )
 
@@ -128,7 +160,7 @@ def mozc_cc_test(name, tags = [], deps = [], copts = [], **kwargs):
     cc_test(
         name = name,
         tags = tags,
-        deps = deps + ["//:macro"],
+        deps = deps + ["//:macro"] + _win32_default_manifest_deps(),
         copts = copts + _copts_unsigned_char(),
         **kwargs
     )
@@ -162,6 +194,14 @@ def _mozc_gen_win32_resource_file(
         tool = "//build_tools:gen_win32_resource_header",
     )
 
+# Alias to the rule for Windows resource
+mozc_win32_resource = windows_resource
+
+register_extension_info(
+    extension = mozc_win32_resource,
+    label_regex_for_dep = "{extension_name}",
+)
+
 def mozc_win32_resource_from_template(
         name,
         src,
@@ -191,10 +231,7 @@ def mozc_win32_resource_from_template(
         "GoogleJapaneseInput": ["GOOGLE_JAPANESE_INPUT_BUILD"],
     }.get(BRANDING, [])
 
-    # Create main resource
-    win32_resource_files_main = windows_resource
-
-    win32_resource_files_main(
+    mozc_win32_resource(
         name = name,
         rc_files = [":" + generated_rc_file],
         manifests = manifests,
@@ -397,6 +434,9 @@ def mozc_win32_cc_prod_binary(
         srcs = srcs,
         defines = defines,
         deps = deps,
+        # Production binaries control their own manifests through
+        # mozc_win32_resource_from_template.
+        enable_win32_default_manifest = False,
         features = features,
         # '/CETCOMPAT' is available only on x86/x64 architectures.
         linkopts = modified_linkopts + select({
@@ -457,6 +497,11 @@ def mozc_win32_cc_prod_binary(
         subpath = target_name + ".pdb",
         visibility = visibility,
     )
+
+register_extension_info(
+    extension = mozc_win32_cc_prod_binary,
+    label_regex_for_dep = "{extension_name}",
+)
 
 def mozc_cc_win32_library(
         name,
@@ -743,6 +788,11 @@ def mozc_macos_application(name, bundle_name, infoplists, strings = [], bundle_i
         **kwargs
     )
 
+register_extension_info(
+    extension = mozc_macos_application,
+    label_regex_for_dep = "{extension_name}",
+)
+
 def mozc_macos_bundle(name, bundle_name, infoplists, strings = [], bundle_id = None, tags = [], **kwargs):
     """Rule to create .bundle for macOS.
 
@@ -768,6 +818,11 @@ def mozc_macos_bundle(name, bundle_name, infoplists, strings = [], bundle_id = N
         **kwargs
     )
 
+register_extension_info(
+    extension = mozc_macos_bundle,
+    label_regex_for_dep = "{extension_name}",
+)
+
 def _get_value(args):
     for arg in args:
         if arg != None:
@@ -779,6 +834,7 @@ def mozc_select(
         client = None,
         oss = None,
         android = None,
+        apple = None,
         ios = None,
         chromiumos = None,
         linux = None,
@@ -827,18 +883,18 @@ def mozc_select(
     """
     return select({
         "//bazel/cc_target_os:android": _get_value([android, client, default]),
-        "//bazel/cc_target_os:apple": _get_value([ios, client, default]),
+        "//bazel/cc_target_os:apple": _get_value([ios, apple, client, default]),
         "//bazel/cc_target_os:chromiumos": _get_value([chromiumos, client, default]),
-        "//bazel/cc_target_os:darwin": _get_value([macos, ios, client, default]),
-        "//bazel/cc_target_os:wasm": _get_value([wasm, client, default]),
+        "//bazel/cc_target_os:darwin": _get_value([macos, apple, client, default]),
+        "//bazel/cc_target_os:wasm": _get_value([wasm, linux, client, default]),
         "//bazel/cc_target_os:windows": _get_value([windows, client, default]),
         "//bazel/cc_target_os:linux": _get_value([linux, client, default]),
         "//bazel/cc_target_os:oss_android": _get_value([oss_android, oss, android, client, default]),
         "//bazel/cc_target_os:oss_linux": _get_value([oss_linux, oss, linux, client, default]),
-        "//bazel/cc_target_os:oss_macos": _get_value([oss_macos, oss, macos, ios, client, default]),
+        "//bazel/cc_target_os:oss_macos": _get_value([oss_macos, oss, macos, apple, client, default]),
         "//bazel/cc_target_os:oss_windows": _get_value([oss_windows, oss, windows, client, default]),
         "//bazel/cc_target_os:prod_linux": _get_value([prod_linux, prod, oss_linux, oss, linux, client, default]),
-        "//bazel/cc_target_os:prod_macos": _get_value([prod_macos, prod, oss_macos, oss, macos, ios, client, default]),
+        "//bazel/cc_target_os:prod_macos": _get_value([prod_macos, prod, oss_macos, oss, macos, apple, client, default]),
         "//bazel/cc_target_os:prod_windows": _get_value([prod_windows, prod, oss_windows, oss, windows, client, default]),
         "//conditions:default": default,
     })

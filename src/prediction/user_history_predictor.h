@@ -45,6 +45,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/span.h"
 #include "base/container/arena.h"
+#include "base/container/flat_concurrent_cache.h"
 #include "base/container/trie.h"
 #include "base/thread.h"
 #include "composer/query.h"
@@ -57,7 +58,6 @@
 #include "prediction/user_history_predictor.pb.h"
 #include "prediction/user_history_storage.h"
 #include "request/conversion_request.h"
-#include "storage/lru_cache.h"
 
 namespace mozc::prediction {
 
@@ -69,6 +69,9 @@ class UserHistoryPredictor : public PredictorInterface {
   ~UserHistoryPredictor() override;
 
   std::vector<Result> Predict(const ConversionRequest& request) const override;
+
+  // TODO(taku): Make it a virtual method of PredictorInterface.
+  std::vector<Result> Convert(const ConversionRequest& request) const;
 
   // Hook(s) for all mutable operations.
   void Finish(const ConversionRequest& request,
@@ -180,6 +183,8 @@ class UserHistoryPredictor : public PredictorInterface {
   };
 
   // Returns true if this predictor should return results for the input.
+  // TODO(taku): better to rename this function as it is used both for
+  // prediction and conversion.
   bool ShouldPredict(const ConversionRequest& request) const;
 
   // Gets match type from two strings
@@ -275,6 +280,7 @@ class UserHistoryPredictor : public PredictorInterface {
                    absl::string_view request_key, absl::string_view key_base,
                    const Trie<std::string>* absl_nullable key_expanded,
                    const Entry& entry, const Entry* absl_nullable prev_entry,
+                   bool exact_match_only,
                    EntryPriorityQueue& entry_queue) const;
 
   // For the EXACT and RIGHT_PREFIX match, we will generate joined
@@ -323,7 +329,13 @@ class UserHistoryPredictor : public PredictorInterface {
       converter::InnerSegmentBoundarySpan inner_segment_boundary, Entry entry,
       EntryPriorityQueue& entry_queue) const;
 
-  EntryPriorityQueue GetEntry_QueueFromHistoryDictionary(
+  // Creates entry queue from request and history storage on prediction mode.
+  EntryPriorityQueue CreateEntryQueueFromHistoryForPrediction(
+      const ConversionRequest& request, const Entry* absl_nullable prev_entry,
+      size_t max_entry_queue_size) const;
+
+  // Creates entry queue from request and history storage on conversion mode.
+  EntryPriorityQueue CreateEntryQueueFromHistoryForConversion(
       const ConversionRequest& request, const Entry* absl_nullable prev_entry,
       size_t max_entry_queue_size) const;
 
@@ -474,15 +486,21 @@ class UserHistoryPredictor : public PredictorInterface {
   bool IsProperNoun(const ConversionRequest& request,
                     const Result& result) const;
 
+  // Returns true if the low frequency full sentence entry can be
+  // suggested.
+  static bool AllowLowFreqFullSentenceEntryMatch(
+      const ConversionRequest& request, absl::string_view request_key,
+      const UserHistoryPredictor::MatchType mtype, const Entry& entry);
+
   const dictionary::DictionaryInterface& dictionary_;
   const dictionary::UserDictionaryInterface& user_dictionary_;
   const engine::Modules& modules_;
 
-  // TODO(taku): Moves UserHistory to modules.
-  UserHistoryStorage storage_;
+  // Initialized via modules_.
+  UserHistoryStorage& storage_;
 
   // Internal LRU cache to store dic_key/Entry to be reverted.
-  storage::LruCache<uint64_t, RevertEntries> revert_cache_;
+  FlatConcurrentCache<uint64_t, RevertEntries> revert_cache_;
 
   // `last_committed_entries_` stores the entries to be re-committed
   // after Revert().  Note that `last_committed_entries_` is not associated with

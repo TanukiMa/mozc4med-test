@@ -134,6 +134,7 @@ mozc_cc_test(
     deps = [
         ":flat_set",
         "//testing:gunit_main",
+        "@com_google_absl//absl/base:log_severity",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -208,5 +209,19 @@ mozc_cc_test(
         "//testing:gunit_main",
         "@com_google_absl//absl/hash",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+mozc_cc_library(
+    name = "tuple",
+    hdrs = ["tuple.h"],
+)
+
+mozc_cc_test(
+    name = "tuple_test",
+    srcs = ["tuple_test.cc"],
+    deps = [
+        ":tuple",
+        "//testing:gunit_main",
     ],
 )

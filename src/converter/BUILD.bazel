@@ -27,12 +27,14 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+load("@rules_python//python:defs.bzl", "py_test")
 load(
     "//:build_defs.bzl",
     "mozc_cc_binary",
     "mozc_cc_library",
     "mozc_cc_test",
     "mozc_py_binary",
+    "mozc_py_library",
     "mozc_select",
     "mozc_select_enable_supplemental_model",
 )
@@ -169,6 +171,7 @@ mozc_cc_test(
         ":segments",
         ":segments_matchers",
         "//testing:gunit_main",
+        "@com_google_absl//absl/strings:string_view",
         "@com_google_absl//absl/types:span",
     ],
 )
@@ -223,11 +226,23 @@ mozc_cc_library(
     ],
     deps = [
         "//base:bits",
-        "//data_manager",
         "//storage/louds:simple_succinct_bit_vector_index",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+mozc_cc_library(
+    name = "caching_connector",
+    hdrs = ["caching_connector.h"],
+    visibility = [
+        "//:__subpackages__",
+    ],
+    deps = [
+        ":connector",
+        "@com_google_absl//absl/algorithm:container",
+        "@com_google_absl//absl/log:check",
     ],
 )
 
@@ -274,7 +289,7 @@ mozc_cc_library(
         "//dictionary:dictionary_interface",
         "//dictionary:pos_matcher",
         "//prediction:suggestion_filter",
-        "//request:conversion_request",
+        "//request:options",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -289,7 +304,7 @@ mozc_cc_test(
         "nbest_generator_test.cc",
     ],
     deps = [
-        ":immutable_converter_no_factory",
+        ":immutable_converter",
         ":lattice",
         ":nbest_generator",
         ":node",
@@ -323,7 +338,7 @@ mozc_cc_library(
         "//dictionary:pos_matcher",
         "//prediction:suggestion_filter",
         "//protocol:commands_cc_proto",
-        "//request:conversion_request",
+        "//request:options",
         "//request:request_util",
         "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/hash",
@@ -368,7 +383,6 @@ mozc_cc_library(
     deps = [
         ":node",
         "//base/container:bitarray",
-        "//data_manager",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/types:span",
     ],
@@ -383,7 +397,6 @@ mozc_cc_library(
     deps = [
         ":node",
         ":node_allocator",
-        "//base:singleton",
         "//base/strings:unicode",
         "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
@@ -410,20 +423,22 @@ mozc_cc_library(
     ],
     deps = [
         ":segments",
-        "//request:conversion_request",
-        "@com_google_absl//absl/base:core_headers",
+        "//request:options",
     ],
 )
 
 mozc_cc_library(
-    name = "immutable_converter_no_factory",
+    name = "immutable_converter",
     srcs = [
         "immutable_converter.cc",
     ],
     hdrs = ["immutable_converter.h"],
-    visibility = ["//engine:__pkg__"],
+    visibility = [
+        "//engine:__pkg__",
+    ],
     deps = [
         ":attribute",
+        ":caching_connector",
         ":connector",
         ":immutable_converter_interface",
         ":key_corrector",
@@ -447,7 +462,7 @@ mozc_cc_library(
         "//prediction:suggestion_filter",
         "//protocol:commands_cc_proto",
         "//protocol:config_cc_proto",
-        "//request:conversion_request",
+        "//request:options",
         "@com_google_absl//absl/algorithm:container",
         "@com_google_absl//absl/base:nullability",
         "@com_google_absl//absl/container:flat_hash_set",
@@ -467,7 +482,7 @@ mozc_cc_test(
     ],
     deps = [
         ":attribute",
-        ":immutable_converter_no_factory",
+        ":immutable_converter",
         ":inner_segment",
         ":lattice",
         ":node",
@@ -479,6 +494,7 @@ mozc_cc_test(
         "//engine:modules",
         "//protocol:commands_cc_proto",
         "//request:conversion_request",
+        "//request:options",
         "//request:request_test_util",
         "//testing:gunit_main",
         "//testing:test_peer",
@@ -556,12 +572,13 @@ mozc_cc_test(
         ":attribute",
         ":converter",
         ":converter_interface",
+        ":immutable_converter",
         ":immutable_converter_interface",
-        ":immutable_converter_no_factory",
         ":inner_segment",
         ":segments",
         ":segments_matchers",
         "//base:util",
+        "//base/container:tuple",
         "//composer",
         "//composer:table",
         "//config:config_handler",
@@ -679,7 +696,7 @@ mozc_cc_test(
     srcs = ["reverse_converter_test.cc"],
     visibility = ["//prediction:__pkg__"],
     deps = [
-        ":immutable_converter_no_factory",
+        ":immutable_converter",
         ":reverse_converter",
         ":segments",
         "//data_manager/testing:mock_data_manager",
@@ -742,7 +759,6 @@ mozc_cc_binary(
         "//base:file_util",
         "//base:init_mozc",
         "//base:number_util",
-        "//base:singleton",
         "//base:system_util",
         "//base/container:flat_set",
         "//base/protobuf:text_format",
@@ -758,6 +774,7 @@ mozc_cc_binary(
         "//protocol:engine_builder_cc_proto",
         "//request:conversion_request",
         "//request:request_test_util",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",
@@ -775,7 +792,8 @@ mozc_cc_binary(
     testonly = True,
     srcs = ["immutable_converter_main.cc"],
     deps = [
-        ":immutable_converter_no_factory",
+        ":debug_util",
+        ":immutable_converter",
         ":lattice",
         ":node",
         ":segments",
@@ -821,6 +839,7 @@ mozc_cc_library(
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/functional:any_invocable",
         "@com_google_absl//absl/log:check",
+        "@com_google_absl//absl/strings:string_view",
     ],
 )
 
@@ -830,12 +849,31 @@ mozc_py_binary(
     visibility = ["//data_manager:__subpackages__"],
 )
 
+mozc_py_library(
+    name = "gen_boundary_data_lib",
+    srcs = ["gen_boundary_data.py"],
+    visibility = ["//visibility:private"],
+)
+
 mozc_py_binary(
     name = "gen_boundary_data",
     srcs = ["gen_boundary_data.py"],
     visibility = [
         "//data_manager:__subpackages__",
         "//tools/periodical_update:__pkg__",
+    ],
+    deps = [
+        ":gen_boundary_data_lib",
+    ],
+)
+
+py_test(
+    name = "gen_boundary_data_test",
+    srcs = ["gen_boundary_data_test.py"],
+    tags = ["manual"],
+    deps = [
+        ":gen_boundary_data_lib",
+        "//third_party/py/absl/testing:absltest",
     ],
 )
 
@@ -923,7 +961,10 @@ mozc_cc_binary(
     name = "quality_regression_main",
     testonly = 1,
     srcs = ["quality_regression_main.cc"],
-    visibility = ["//data:__subpackages__"],
+    visibility = [
+        "//data:__subpackages__",
+        "//tools/periodical_update:__pkg__",
+    ],
     deps = [
         ":quality_regression_util",
         "//base:init_mozc",
@@ -946,7 +987,10 @@ mozc_cc_binary(
 mozc_py_binary(
     name = "quality_regression",
     srcs = ["quality_regression.py"],
-    visibility = ["//data:__subpackages__"],
+    visibility = [
+        "//data:__subpackages__",
+        "//tools/periodical_update:__pkg__",
+    ],
     deps = ["//build_tools:mozc_version_lib"],
 )
 
@@ -974,4 +1018,28 @@ bzl_library(
     name = "evalution_bzl",
     srcs = ["evaluation.bzl"],
     test_size = "small",
+)
+
+mozc_cc_library(
+    name = "debug_util",
+    srcs = ["debug_util.cc"],
+    hdrs = ["debug_util.h"],
+    deps = [
+        ":lattice",
+        ":node",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:span",
+    ],
+)
+
+mozc_cc_test(
+    name = "debug_util_test",
+    srcs = ["debug_util_test.cc"],
+    deps = [
+        ":debug_util",
+        ":lattice",
+        ":node",
+        "//testing:gunit_main",
+    ],
 )

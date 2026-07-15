@@ -48,7 +48,6 @@ mozc_cc_library(
         "//base:config_file_stream",
         "//base:hash",
         "//base:port",
-        "//base:singleton",
         "//base:system_util",
         "//base:thread",
         "//base:version",
@@ -56,6 +55,7 @@ mozc_cc_library(
         "//base/strings:assign",
         "//protocol:config_cc_proto",
         "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/strings:str_format",
@@ -98,21 +98,12 @@ mozc_cc_library(
     visibility = [
         "//:__subpackages__",
     ],
-    deps = [
-        "//base:singleton",
-    ] + mozc_select(
+    deps = mozc_select(
         android = [
             ":config_handler",
             "//protocol:config_cc_proto",
         ],
-        ios = [
-            "//base/mac:mac_util",
-            "//base:system_util",
-            "@com_google_absl//absl/strings",
-            "@com_google_absl//absl/synchronization",
-            "//base:file_util",
-        ],
-        macos = [
+        apple = [
             "//base/mac:mac_util",
             "//base:system_util",
             "@com_google_absl//absl/strings",
@@ -136,21 +127,19 @@ mozc_cc_test(
             "//testing:mozctest",
             "//protocol:config_cc_proto",
         ],
+        macos = [
+            "//base:file_util",
+            "//base:system_util",
+            "//testing:mozctest",
+            "@com_google_absl//absl/strings",
+        ],
         windows = [
             "//base:bits",
             "//base/win32:win_api_test_helper",
             "@com_google_absl//absl/base",
             "@com_google_absl//absl/container:flat_hash_map",
-            "//base:singleton",
         ],
     ),
-)
-
-mozc_cc_library(
-    name = "stats_config_util_mock",
-    testonly = True,
-    hdrs = ["stats_config_util_mock.h"],
-    deps = [":stats_config_util"],
 )
 
 mozc_cc_library(
@@ -168,7 +157,6 @@ mozc_cc_library(
         "//base:bits",
         "//base:config_file_stream",
         "//base:number_util",
-        "//base:singleton",
         "//base:util",
         "//base:vlog",
         "//base/strings:assign",
@@ -176,6 +164,7 @@ mozc_cc_library(
         "//base/strings:unicode",
         "//protocol:config_cc_proto",
         "//storage:lru_storage",
+        "@com_google_absl//absl/base:no_destructor",
         "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/log",
         "@com_google_absl//absl/log:check",

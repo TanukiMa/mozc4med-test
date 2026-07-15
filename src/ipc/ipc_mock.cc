@@ -35,8 +35,8 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "absl/time/time.h"
-#include "base/strings/zstring_view.h"
 #include "base/version.h"
 #include "ipc/ipc.h"
 
@@ -56,7 +56,7 @@ uint32_t IPCClientMock::GetServerProtocolVersion() const {
   return server_protocol_version_;
 }
 
-const std::string &IPCClientMock::GetServerProductVersion() const {
+absl::string_view IPCClientMock::GetServerProductVersion() const {
   return server_product_version_;
 }
 
@@ -64,7 +64,7 @@ uint32_t IPCClientMock::GetServerProcessId() const {
   return server_process_id_;
 }
 
-bool IPCClientMock::Call(const std::string &request, std::string *response,
+bool IPCClientMock::Call(absl::string_view request, std::string *response,
                          const absl::Duration timeout) {
   caller_->SetGeneratedRequest(request);
   if (!connected_ || !result_) {
@@ -80,24 +80,24 @@ IPCClientFactoryMock::IPCClientFactoryMock()
       server_protocol_version_(IPC_PROTOCOL_VERSION) {}
 
 std::unique_ptr<IPCClientInterface> IPCClientFactoryMock::NewClient(
-    zstring_view unused_name, zstring_view path_name) {
+    absl::string_view unused_name, absl::string_view path_name) {
   return NewClientMock();
 }
 
 std::unique_ptr<IPCClientInterface> IPCClientFactoryMock::NewClient(
-    zstring_view unused_name) {
+    absl::string_view unused_name) {
   return NewClientMock();
 }
 
-const std::string &IPCClientFactoryMock::GetGeneratedRequest() const {
+absl::string_view IPCClientFactoryMock::GetGeneratedRequest() const {
   return request_;
 }
 
-void IPCClientFactoryMock::SetGeneratedRequest(const std::string &request) {
+void IPCClientFactoryMock::SetGeneratedRequest(absl::string_view request) {
   request_ = request;
 }
 
-void IPCClientFactoryMock::SetMockResponse(const std::string &response) {
+void IPCClientFactoryMock::SetMockResponse(absl::string_view response) {
   response_ = response;
 }
 
@@ -113,7 +113,7 @@ void IPCClientFactoryMock::SetServerProtocolVersion(
 }
 
 void IPCClientFactoryMock::SetServerProductVersion(
-    const std::string &server_product_version) {
+    absl::string_view server_product_version) {
   server_product_version_ = server_product_version;
 }
 

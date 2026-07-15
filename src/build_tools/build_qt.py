@@ -408,7 +408,7 @@ def make_configure_options(args: argparse.Namespace) -> list[str]:
         '-platform',
         'win32-msvc',
     ]
-    if args.target_arch in ['x64', 'amd64']:
+    if args.target_arch == 'x64':
       qt_configure_options += ['-intelcet']
 
   if args.confirm_license:
@@ -490,7 +490,10 @@ def parse_args() -> argparse.Namespace:
   )
   if is_windows():
     parser.add_argument(
-        '--target_arch', help='"x64" or "arm64"', type=str, default='x64'
+        '--target_arch',
+        help='target architecture',
+        choices=['x64', 'arm64'],
+        default=normalize_win_arch(platform.uname().machine),
     )
     parser.add_argument(
         '--vcvarsall_path', help='Path of vcvarsall.bat', type=str, default=None
@@ -729,14 +732,21 @@ def normalize_win_arch(arch: str) -> str:
   """Normalize the architecture name for Windows build environment.
 
   Args:
-    arch: a string representation of a CPU architecture to be normalized.
+    arch: 'amd64', 'x64', 'arm64', or its capitalization variants.
 
   Returns:
-    String representation of a CPU architecture (e.g. 'x64' and 'arm64')
+    Either 'x64' or 'arm64'.
+
+  Raises:
+    ValueError: When the given architecture does not match any of them.
   """
-  normalized = arch.lower()
-  if normalized == 'amd64':
-    return 'x64'
+  normalized = {
+      'amd64': 'x64',
+      'x64': 'x64',
+      'arm64': 'arm64',
+  }.get(arch.lower())
+  if not normalized:
+    raise ValueError(f'Unsupported architecture: {arch}')
   return normalized
 
 
@@ -840,6 +850,36 @@ def extract_qt_src(args: argparse.Namespace) -> None:
           f.extractall(path=qt_src_dir, filter=filter)
       else:
         f.extractall(path=qt_src_dir, members=qt_extract_filter(f))
+  # TODO: https://github.com/google/mozc/issues/1457 - Remove this.
+  apply_patch_to_qt_src(qt_src_dir, args.dryrun)
+
+
+def apply_patch_to_qt_src(
+    qt_src_dir: pathlib.Path,
+    dryrun: bool = False,
+) -> None:
+  """Apply local patches to the extracted Qt source.
+
+  Args:
+    qt_src_dir: The root directory of the extracted Qt source.
+    dryrun: True to skip actual file modifications.
+  """
+  # Workaround for QTBUG-145239: qyieldcpu.h fails to compile with
+  # macOS 26.4 SDK on Apple Silicon.
+  # https://qt-project.atlassian.net/browse/QTBUG-145239
+  # https://codereview.qt-project.org/c/qt/qtbase/+/724619
+  qyieldcpu_h = qt_src_dir.joinpath('src', 'corelib', 'thread', 'qyieldcpu.h')
+  if dryrun:
+    print(f'dryrun: patching {qyieldcpu_h} for QTBUG-145239')
+    return
+  content = qyieldcpu_h.read_text(encoding='utf-8')
+  content = content.replace(
+      '#if __has_builtin(__yield)\n',
+      '#if __has_builtin(__builtin_arm_yield)\n'
+      '    __builtin_arm_yield();\n'
+      '#elif __has_builtin(__yield)\n',
+  )
+  qyieldcpu_h.write_text(content, encoding='utf-8')
 
 
 def main():

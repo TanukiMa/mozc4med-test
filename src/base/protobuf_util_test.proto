@@ -27,42 +27,34 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef MOZC_DICTIONARY_FILE_CODEC_INTERFACE_H_
-#define MOZC_DICTIONARY_FILE_CODEC_INTERFACE_H_
+// Protocol buffer messages for testing protobuf_util.
+syntax = "proto2";
 
-#include <iosfwd>
-#include <ostream>
-#include <string>
-#include <vector>
+package mozc.protobuf_util;
 
-#include "absl/status/status.h"
-#include "absl/strings/string_view.h"
-#include "absl/types/span.h"
-#include "dictionary/file/section.h"
+option java_package = "mozc.protobufutil";
 
-namespace mozc {
-namespace dictionary {
+message TestMessage {
+  optional string test_string = 1;
+  optional string logo_file_name = 2;
+  optional bool is_enabled = 3 [default = true];
 
-class DictionaryFileCodecInterface {
- public:
-  // Writes sections to an output file stream.
-  virtual void WriteSections(absl::Span<const DictionaryFileSection> sections,
-                             std::ostream *ofs) const = 0;
+  message TextStyle {
+    optional string font_name = 1;
+    optional int32 font_size = 2;
+  }
+  optional TextStyle shortcut_style = 4;
+}
 
-  // Reads sections from memory image.
-  virtual absl::Status ReadSections(
-      const char *image, int length,
-      std::vector<DictionaryFileSection> *sections) const = 0;
-
-  // Gets section name.
-  virtual std::string GetSectionName(absl::string_view name) const = 0;
-
- protected:
-  DictionaryFileCodecInterface() = default;
-  virtual ~DictionaryFileCodecInterface() = default;
-};
-
-}  // namespace dictionary
-}  // namespace mozc
-
-#endif  // MOZC_DICTIONARY_FILE_CODEC_INTERFACE_H_
+message TestRepeatedMessage {
+  message Entry {
+    optional string key = 1;
+    optional string value = 2;
+    optional float score = 3;
+  }
+  message Dictionary {
+    optional string name = 1;
+    repeated Entry entries = 2;
+  }
+  repeated Dictionary dictionaries = 1;
+}

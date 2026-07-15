@@ -27,28 +27,30 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "dictionary/file/codec_factory.h"
+#ifndef MOZC_RENDERER_WIN32_WIN32_DPI_UTIL_H_
+#define MOZC_RENDERER_WIN32_WIN32_DPI_UTIL_H_
 
-#include "base/singleton.h"
-#include "dictionary/file/codec.h"
-#include "dictionary/file/codec_interface.h"
+#include <cstdint>
+
+#include "protocol/renderer_style.pb.h"
 
 namespace mozc {
-namespace dictionary {
-namespace {
-DictionaryFileCodecInterface *g_dictionary_file_codec = nullptr;
-}  // namespace
+namespace renderer {
+namespace win32 {
 
-DictionaryFileCodecInterface *DictionaryFileCodecFactory::GetCodec() {
-  if (g_dictionary_file_codec == nullptr) {
-    return Singleton<DictionaryFileCodec>::get();
-  }
-  return g_dictionary_file_codec;
-}
+// Returns the DPI scaling factor for |dpi| (i.e. |dpi| / 96.0).
+double GetDPIScalingFactor(uint32_t dpi);
 
-void DictionaryFileCodecFactory::SetCodec(DictionaryFileCodecInterface *codec) {
-  g_dictionary_file_codec = codec;
-}
+// Returns the effective DPI of the monitor containing the given screen
+// coordinates. Falls back to USER_DEFAULT_SCREEN_DPI on failure.
+uint32_t GetDpiForPoint(int x, int y);
 
-}  // namespace dictionary
+// Populates |style| with the default RendererStyle, scaled for |dpi|.
+void GetScaledRendererStyle(::mozc::renderer::RendererStyle* style,
+                            uint32_t dpi);
+
+}  // namespace win32
+}  // namespace renderer
 }  // namespace mozc
+
+#endif  // MOZC_RENDERER_WIN32_WIN32_DPI_UTIL_H_

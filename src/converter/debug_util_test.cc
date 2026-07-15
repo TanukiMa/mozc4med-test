@@ -27,30 +27,45 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// Factory class for file codec.
+#include "converter/debug_util.h"
 
-#ifndef MOZC_DICTIONARY_FILE_CODEC_FACTORY_H_
-#define MOZC_DICTIONARY_FILE_CODEC_FACTORY_H_
+#include <string>
 
-#include "dictionary/file/codec_interface.h"
+#include "converter/lattice.h"
+#include "converter/node.h"
+#include "testing/gunit.h"
 
 namespace mozc {
-namespace dictionary {
+namespace converter {
+namespace {
 
-class DictionaryFileCodecFactory {
- public:
-  DictionaryFileCodecFactory() = delete;
-  DictionaryFileCodecFactory(const DictionaryFileCodecFactory &) = delete;
-  DictionaryFileCodecFactory &operator=(const DictionaryFileCodecFactory &) =
-      delete;
-  // Returns the singleton instance.
-  static DictionaryFileCodecInterface *GetCodec();
+TEST(DebugUtilTest, DumpNodesEmpty) {
+  Lattice lattice;
+  lattice.SetKey("");
 
-  // For dependency injectin in unit tests.
-  static void SetCodec(DictionaryFileCodecInterface *codec);
-};
+  const std::string dump = DumpNodes(lattice);
+  EXPECT_FALSE(dump.empty());
+  // The header and BOS node should be output.
+  EXPECT_NE(dump.find("BOS"), std::string::npos);
+}
 
-}  // namespace dictionary
+TEST(DebugUtilTest, DumpNodesSimple) {
+  Lattice lattice;
+  lattice.SetKey("a");
+
+  Node* n1 = lattice.NewNode();
+  n1->key = "a";
+  n1->value = "A";
+  n1->begin_pos = 0;
+  n1->end_pos = 1;
+  lattice.Insert(0, n1);
+
+  const std::string dump = DumpNodes(lattice);
+  EXPECT_FALSE(dump.empty());
+  EXPECT_NE(dump.find("BOS"), std::string::npos);
+  EXPECT_NE(dump.find("\ta\tA\t"), std::string::npos);
+}
+
+}  // namespace
+}  // namespace converter
 }  // namespace mozc
-
-#endif  // MOZC_DICTIONARY_FILE_CODEC_FACTORY_H_

@@ -29,6 +29,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 """A script to generate a C++ header file for the POS conversion map."""
+
 import codecs
 import optparse
 
@@ -42,9 +43,9 @@ HEADER = """// Copyright 2009 Google Inc. All Rights Reserved.
 #define MOZC_DICTIONARY_POS_MAP_INC_
 
 // POS conversion rules
-constexpr PosMap kPosMap[] = {
+static const absl::NoDestructor<PosMap> kPosMap({
 """
-FOOTER = """};
+FOOTER = """});
 
 #endif  // MOZC_DICTIONARY_POS_MAP_INC_
 """
@@ -122,7 +123,7 @@ def main():
       options.third_party_pos_map_file, options.user_pos_file
   )
 
-  with open(options.output, 'w') as stream:
+  with open(options.output, 'w', encoding='utf8') as stream:
     OutputPosMap(pos_map, stream)
 
 

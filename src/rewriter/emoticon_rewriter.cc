@@ -44,7 +44,6 @@
 #include "converter/attribute.h"
 #include "converter/candidate.h"
 #include "converter/segments.h"
-#include "data_manager/data_manager.h"
 #include "data_manager/serialized_dictionary.h"
 #include "protocol/commands.pb.h"
 #include "protocol/config.pb.h"
@@ -54,22 +53,6 @@
 
 namespace mozc {
 namespace {
-
-class ValueCostCompare {
- public:
-  bool operator()(SerializedDictionary::const_iterator a,
-                  SerializedDictionary::const_iterator b) const {
-    return a.cost() < b.cost();
-  }
-};
-
-class IsEqualValue {
- public:
-  bool operator()(const SerializedDictionary::const_iterator a,
-                  const SerializedDictionary::const_iterator b) const {
-    return a.value() == b.value();
-  }
-};
 
 // Insert Emoticon into the |segment|
 // Top |initial_insert_size| candidates are inserted from |initial_insert_pos|.
@@ -92,13 +75,21 @@ void InsertCandidates(SerializedDictionary::const_iterator begin,
     sorted_value.push_back(iter);
   }
 
-  std::sort(sorted_value.begin(), sorted_value.end(), ValueCostCompare());
+  std::sort(sorted_value.begin(), sorted_value.end(),
+            [](SerializedDictionary::const_iterator lhs,
+               SerializedDictionary::const_iterator rhs) {
+              return lhs.cost() < rhs.cost();
+            });
 
   // after sorting the values by |cost|, adjacent candidates
   // will have the same value. It is almost OK to use std::unique to
   // remove dup entries, it is not a perfect way though.
   sorted_value.erase(
-      std::unique(sorted_value.begin(), sorted_value.end(), IsEqualValue()),
+      std::unique(sorted_value.begin(), sorted_value.end(),
+                  [](const SerializedDictionary::const_iterator lhs,
+                     const SerializedDictionary::const_iterator rhs) {
+                    return lhs.value() == rhs.value();
+                  }),
       sorted_value.end());
 
   for (size_t i = 0; i < sorted_value.size(); ++i) {
@@ -208,14 +199,6 @@ bool EmoticonRewriter::RewriteCandidate(Segments* segments) const {
   }
 
   return modified;
-}
-
-std::unique_ptr<EmoticonRewriter> EmoticonRewriter::CreateFromDataManager(
-    const DataManager& data_manager) {
-  absl::string_view token_array_data, string_array_data;
-  data_manager.GetEmoticonRewriterData(&token_array_data, &string_array_data);
-  return std::make_unique<EmoticonRewriter>(token_array_data,
-                                            string_array_data);
 }
 
 EmoticonRewriter::EmoticonRewriter(absl::string_view token_array_data,
