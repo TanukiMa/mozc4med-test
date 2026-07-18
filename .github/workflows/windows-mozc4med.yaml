@@ -80,15 +80,31 @@ jobs:
           python -c @'
           from wand.image import Image
           import glob
+          import subprocess
+
+          TARGET_COLOR = "#FF6600"
+          FILL_COLOR = "#FF0000"
+          FUZZ_PERCENT = 30
+
+          def show_colors(path, label):
+              print(f"::group::[DEBUG] {label} magick identify -verbose {path}")
+              subprocess.run(["magick", "identify", "-verbose", path], check=False)
+              print("::endgroup::")
 
           def colorize(path):
+              show_colors(path, "BEFORE")
               with Image(filename=path) as img:
-                  img.opaque_paint("#FF6600", "#FF0000", fuzz=30)
+                  # fuzz is an absolute value in [0, quantum_range], not a percentage.
+                  fuzz = img.quantum_range * FUZZ_PERCENT / 100
+                  changed = img.opaque_paint(TARGET_COLOR, FILL_COLOR, fuzz=fuzz)
                   img.save(filename=path)
+              print(f"[DEBUG] {path}: opaque_paint succeeded={changed}")
+              show_colors(path, "AFTER")
 
-          for f in glob.glob("*.ico"):
-              if not f.endswith(("_red.ico", "_red")):
-                  colorize(f)
+          files = sorted(glob.glob("*.ico"))
+          print(f"[DEBUG] {len(files)} .ico files to colorize: {files}")
+          for f in files:
+              colorize(f)
           '@
 
       - name: build artifacts
@@ -173,15 +189,31 @@ jobs:
           python -c @'
           from wand.image import Image
           import glob
+          import subprocess
+
+          TARGET_COLOR = "#FF6600"
+          FILL_COLOR = "#FF0000"
+          FUZZ_PERCENT = 30
+
+          def show_colors(path, label):
+              print(f"::group::[DEBUG] {label} magick identify -verbose {path}")
+              subprocess.run(["magick", "identify", "-verbose", path], check=False)
+              print("::endgroup::")
 
           def colorize(path):
+              show_colors(path, "BEFORE")
               with Image(filename=path) as img:
-                  img.opaque_paint("#FF6600", "#FF0000", fuzz=30)
+                  # fuzz is an absolute value in [0, quantum_range], not a percentage.
+                  fuzz = img.quantum_range * FUZZ_PERCENT / 100
+                  changed = img.opaque_paint(TARGET_COLOR, FILL_COLOR, fuzz=fuzz)
                   img.save(filename=path)
+              print(f"[DEBUG] {path}: opaque_paint succeeded={changed}")
+              show_colors(path, "AFTER")
 
-          for f in glob.glob("*.ico"):
-              if not f.endswith(("_red.ico", "_red")):
-                  colorize(f)
+          files = sorted(glob.glob("*.ico"))
+          print(f"[DEBUG] {len(files)} .ico files to colorize: {files}")
+          for f in files:
+              colorize(f)
           '@
 
       - name: build artifacts
