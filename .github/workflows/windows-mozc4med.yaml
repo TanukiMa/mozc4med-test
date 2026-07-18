@@ -62,6 +62,27 @@ jobs:
         run: |
           rmdir third_party\qt_src /s /q
 
+      - name: Install ImageMagick and Wand
+        shell: pwsh
+        run: |
+          winget install --id ImageMagick.ImageMagick -e --source winget `
+            --accept-source-agreements --accept-package-agreements --silent
+          pip install Wand
+          # winget installs don't refresh PATH for the current job, so add it explicitly
+          # for later steps.
+          $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
+          $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Colorize icons (red)
+        shell: pwsh
+        working-directory: .\src\data\images\win
+        run: |
+          python -c @'
+          from wand.image import Image
+          import glob
+          [Image(filename=f).opaque("#FF6600", "#FF0000", fuzz=30).save(f) for f in glob.glob("*.ico") if not f.endswith(("_red.ico", "_red"))]
+          '@
+
       - name: build artifacts
         shell: cmd
         working-directory: .\src
@@ -125,6 +146,27 @@ jobs:
         working-directory: .\src
         run: |
           rmdir third_party\qt_src /s /q
+
+      - name: Install ImageMagick and Wand
+        shell: pwsh
+        run: |
+          winget install --id ImageMagick.ImageMagick -e --source winget `
+            --accept-source-agreements --accept-package-agreements --silent
+          pip install Wand
+          # winget installs don't refresh PATH for the current job, so add it explicitly
+          # for later steps.
+          $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
+          $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Colorize icons (red)
+        shell: pwsh
+        working-directory: .\src\data\images\win
+        run: |
+          python -c @'
+          from wand.image import Image
+          import glob
+          [Image(filename=f).opaque("#FF6600", "#FF0000", fuzz=30).save(f) for f in glob.glob("*.ico") if not f.endswith(("_red.ico", "_red"))]
+          '@
 
       - name: build artifacts
         shell: cmd
