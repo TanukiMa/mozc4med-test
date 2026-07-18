@@ -80,7 +80,11 @@ jobs:
           python -c @'
           from wand.image import Image
           import glob
-          [Image(filename=f).opaque_paint("#FF6600", "#FF0000", fuzz=30).save(filename=f) for f in glob.glob("*.ico") if not f.endswith(("_red.ico", "_red"))]
+          for f in glob.glob("*.ico"):
+            if not f.endswith(("_red.ico", "_red")):
+              with Image(filename=f) as img:
+                img.opaque_paint("#FF6600", "#FF0000", fuzz=30)
+                img.save(filename=f)
           '@
 
       - name: build artifacts
@@ -165,7 +169,11 @@ jobs:
           python -c @'
           from wand.image import Image
           import glob
-          [Image(filename=f).opaque_paint("#FF6600", "#FF0000", fuzz=30).save(filename=f) for f in glob.glob("*.ico") if not f.endswith(("_red.ico", "_red"))]
+          for f in glob.glob("*.ico"):
+            if not f.endswith(("_red.ico", "_red")):
+              with Image(filename=f) as img:
+                img.opaque_paint("#FF6600", "#FF0000", fuzz=30)
+                img.save(filename=f)
           '@
 
       - name: build artifacts
