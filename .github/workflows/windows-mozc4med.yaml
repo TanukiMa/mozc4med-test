@@ -75,37 +75,8 @@ jobs:
 
       - name: Colorize icons (red)
         shell: pwsh
-        working-directory: .\src\data\images\win
         run: |
-          python -c @'
-          from wand.image import Image
-          import glob
-          import subprocess
-
-          TARGET_COLOR = "#FF6600"
-          FILL_COLOR = "#FF0000"
-          FUZZ_PERCENT = 30
-
-          def show_colors(path, label):
-              print(f"::group::[DEBUG] {label} magick identify -verbose {path}")
-              subprocess.run(["magick", "identify", "-verbose", path], check=False)
-              print("::endgroup::")
-
-          def colorize(path):
-              show_colors(path, "BEFORE")
-              with Image(filename=path) as img:
-                  # fuzz is an absolute value in [0, quantum_range], not a percentage.
-                  fuzz = img.quantum_range * FUZZ_PERCENT / 100
-                  changed = img.opaque_paint(TARGET_COLOR, FILL_COLOR, fuzz=fuzz)
-                  img.save(filename=path)
-              print(f"[DEBUG] {path}: opaque_paint succeeded={changed}")
-              show_colors(path, "AFTER")
-
-          files = sorted(glob.glob("*.ico"))
-          print(f"[DEBUG] {len(files)} .ico files to colorize: {files}")
-          for f in files:
-              colorize(f)
-          '@
+          python mozc4med/tool/colorize_icons.py --verbose
 
       - name: build artifacts
         shell: cmd
@@ -184,37 +155,8 @@ jobs:
 
       - name: Colorize icons (red)
         shell: pwsh
-        working-directory: .\src\data\images\win
         run: |
-          python -c @'
-          from wand.image import Image
-          import glob
-          import subprocess
-
-          TARGET_COLOR = "#FF6600"
-          FILL_COLOR = "#FF0000"
-          FUZZ_PERCENT = 30
-
-          def show_colors(path, label):
-              print(f"::group::[DEBUG] {label} magick identify -verbose {path}")
-              subprocess.run(["magick", "identify", "-verbose", path], check=False)
-              print("::endgroup::")
-
-          def colorize(path):
-              show_colors(path, "BEFORE")
-              with Image(filename=path) as img:
-                  # fuzz is an absolute value in [0, quantum_range], not a percentage.
-                  fuzz = img.quantum_range * FUZZ_PERCENT / 100
-                  changed = img.opaque_paint(TARGET_COLOR, FILL_COLOR, fuzz=fuzz)
-                  img.save(filename=path)
-              print(f"[DEBUG] {path}: opaque_paint succeeded={changed}")
-              show_colors(path, "AFTER")
-
-          files = sorted(glob.glob("*.ico"))
-          print(f"[DEBUG] {len(files)} .ico files to colorize: {files}")
-          for f in files:
-              colorize(f)
-          '@
+          python mozc4med/tool/colorize_icons.py --verbose
 
       - name: build artifacts
         shell: cmd
