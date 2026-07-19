@@ -29,11 +29,11 @@ from typing import List, Match
 DEFAULT_SVG = os.path.join("src", "data", "images", "icon_base.svg")
 DEFAULT_HUE_DEGREES = 0.0  # red
 
-# Matches fill="#abc" / fill="#aabbcc" / stop-color="#abc" / stop-color="#aabbcc".
-# Gradient/filter references like url(#c) use a bare 1-letter id, never 3 or 6
-# hex digits, so they never match this pattern.
+# Matches fill="#abc" / stroke="#abc" / stop-color="#abc" (and their 6-digit
+# forms). Gradient/filter references like url(#c) use a bare 1-letter id,
+# never 3 or 6 hex digits, so they never match this pattern.
 _COLOR_ATTR_RE = re.compile(
-    r'(fill|stop-color)="(#[0-9A-Fa-f]{3}|#[0-9A-Fa-f]{6})"'
+    r'(fill|stroke|stop-color)="(#[0-9A-Fa-f]{3}|#[0-9A-Fa-f]{6})"'
 )
 
 

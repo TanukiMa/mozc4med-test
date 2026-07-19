@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Generate product_icon_langbar.ico from icon_base.svg using ImageMagick.
+"""Render an SVG into a multi-resolution Windows .ico using ImageMagick.
 
 Replaces the previous Wand opaque_paint() approach (mozc4med/tool/colorize_icons.py):
 instead of recoloring pixels in an existing raster icon by fuzzy color-distance
 matching, this renders the SVG -- whose colors are the actual source of truth --
 at each target resolution and packs the results into a multi-resolution .ico.
 
+Used for both product_icon_langbar.ico (from icon_base.svg) and
+product_icon.ico (from icon.svg).
+
 Run locally to debug:
 
-  python mozc4med/tool/generate_langbar_icon.py
+  python mozc4med/tool/generate_icon_from_svg.py --svg src/data/images/icon.svg \
+      --out src/data/images/win/product_icon.ico
 
 Requires ImageMagick's `magick` on PATH. No Python image library needed.
 """
@@ -67,7 +71,7 @@ def main(argv: List[str]) -> int:
         print(f"error: SVG not found: {args.svg}", file=sys.stderr)
         return 1
 
-    tmpdir = tempfile.mkdtemp(prefix="langbar_icon_")
+    tmpdir = tempfile.mkdtemp(prefix="svg_icon_")
     try:
         pngs = []
         for size in SIZES:

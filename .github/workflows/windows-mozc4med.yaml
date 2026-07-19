@@ -73,27 +73,36 @@ jobs:
           $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
           $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
-      - name: Patch icon_base.svg color (hue shift)
+      - name: Patch icon SVG colors (hue shift)
         shell: pwsh
         run: |
-          # Recolor the SVG source in the runner's working copy only -- the
-          # tracked repository file is left untouched. Shifts every color's
+          # Recolor the SVG sources in the runner's working copy only -- the
+          # tracked repository files are left untouched. Shifts every color's
           # hue to red while preserving its saturation/lightness, so
           # gradients and shading are kept instead of just replacing one
           # hard-coded orange literal.
-          python mozc4med/tool/hue_shift_svg.py --verbose
+          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon_base.svg --verbose
+          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon.svg --verbose
 
-      - name: Generate red product icon (langbar)
+      - name: Generate red product icons
         shell: pwsh
         run: |
-          python mozc4med/tool/generate_langbar_icon.py
+          python mozc4med/tool/generate_icon_from_svg.py `
+            --svg src/data/images/icon_base.svg `
+            --out src/data/images/win/product_icon_langbar.ico
+          python mozc4med/tool/generate_icon_from_svg.py `
+            --svg src/data/images/icon.svg `
+            --out src/data/images/win/product_icon.ico
 
       - name: Colorize icons (red)
         shell: pwsh
         run: |
-          # product_icon_langbar.ico is generated separately (above) from an SVG
-          # source, so it is excluded here to avoid re-processing it.
-          python mozc4med/tool/colorize_icons.py --verbose --exclude product_icon_langbar.ico
+          # product_icon_langbar.ico and product_icon.ico are generated
+          # separately (above) from SVG sources, so they are excluded here
+          # to avoid re-processing them.
+          python mozc4med/tool/colorize_icons.py --verbose `
+            --exclude product_icon_langbar.ico `
+            --exclude product_icon.ico
 
       - name: build artifacts
         shell: cmd
@@ -170,27 +179,36 @@ jobs:
           $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
           $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
-      - name: Patch icon_base.svg color (hue shift)
+      - name: Patch icon SVG colors (hue shift)
         shell: pwsh
         run: |
-          # Recolor the SVG source in the runner's working copy only -- the
-          # tracked repository file is left untouched. Shifts every color's
+          # Recolor the SVG sources in the runner's working copy only -- the
+          # tracked repository files are left untouched. Shifts every color's
           # hue to red while preserving its saturation/lightness, so
           # gradients and shading are kept instead of just replacing one
           # hard-coded orange literal.
-          python mozc4med/tool/hue_shift_svg.py --verbose
+          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon_base.svg --verbose
+          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon.svg --verbose
 
-      - name: Generate red product icon (langbar)
+      - name: Generate red product icons
         shell: pwsh
         run: |
-          python mozc4med/tool/generate_langbar_icon.py
+          python mozc4med/tool/generate_icon_from_svg.py `
+            --svg src/data/images/icon_base.svg `
+            --out src/data/images/win/product_icon_langbar.ico
+          python mozc4med/tool/generate_icon_from_svg.py `
+            --svg src/data/images/icon.svg `
+            --out src/data/images/win/product_icon.ico
 
       - name: Colorize icons (red)
         shell: pwsh
         run: |
-          # product_icon_langbar.ico is generated separately (above) from an SVG
-          # source, so it is excluded here to avoid re-processing it.
-          python mozc4med/tool/colorize_icons.py --verbose --exclude product_icon_langbar.ico
+          # product_icon_langbar.ico and product_icon.ico are generated
+          # separately (above) from SVG sources, so they are excluded here
+          # to avoid re-processing them.
+          python mozc4med/tool/colorize_icons.py --verbose `
+            --exclude product_icon_langbar.ico `
+            --exclude product_icon.ico
 
       - name: build artifacts
         shell: cmd
