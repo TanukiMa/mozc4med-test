@@ -80,13 +80,21 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
     parser.add_argument(
         "--verbose", action="store_true",
         help="Dump `magick identify -verbose` output before/after each file")
+    parser.add_argument(
+        "--exclude", action="append", default=[], metavar="FILENAME",
+        help="Base filename to skip (e.g. an icon generated separately from an "
+             "SVG source). May be repeated.")
     return parser.parse_args(argv)
 
 
 def main(argv: List[str]) -> int:
     args = parse_args(argv)
 
-    files = sorted(glob.glob(os.path.join(args.dir, "*.ico")))
+    all_files = sorted(glob.glob(os.path.join(args.dir, "*.ico")))
+    excluded = set(args.exclude)
+    files = [f for f in all_files if os.path.basename(f) not in excluded]
+    if excluded:
+        print(f"[DEBUG] excluding {sorted(excluded)}")
     print(f"[DEBUG] {len(files)} .ico file(s) to colorize in {args.dir}: {files}")
     if not files:
         print(f"error: no .ico files found in {args.dir}", file=sys.stderr)

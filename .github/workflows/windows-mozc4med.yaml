@@ -73,10 +73,27 @@ jobs:
           $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
           $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
+      - name: Patch icon_base.svg color (sed)
+        shell: pwsh
+        run: |
+          # Git for Windows ships sed.exe under usr\bin, but the runner image
+          # only adds Git\bin to PATH, so invoke it by full path instead of
+          # installing a separate sed package.
+          # Recolor the SVG source in the runner's working copy only -- the
+          # tracked repository file is left untouched.
+          & "C:\Program Files\Git\usr\bin\sed.exe" -i -e "s/F80/FF0000/g" src/data/images/icon_base.svg
+
+      - name: Generate red product icon (langbar)
+        shell: pwsh
+        run: |
+          python mozc4med/tool/generate_langbar_icon.py
+
       - name: Colorize icons (red)
         shell: pwsh
         run: |
-          python mozc4med/tool/colorize_icons.py --verbose
+          # product_icon_langbar.ico is generated separately (above) from an SVG
+          # source, so it is excluded here to avoid re-processing it.
+          python mozc4med/tool/colorize_icons.py --verbose --exclude product_icon_langbar.ico
 
       - name: build artifacts
         shell: cmd
@@ -153,10 +170,27 @@ jobs:
           $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
           $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
+      - name: Patch icon_base.svg color (sed)
+        shell: pwsh
+        run: |
+          # Git for Windows ships sed.exe under usr\bin, but the runner image
+          # only adds Git\bin to PATH, so invoke it by full path instead of
+          # installing a separate sed package.
+          # Recolor the SVG source in the runner's working copy only -- the
+          # tracked repository file is left untouched.
+          & "C:\Program Files\Git\usr\bin\sed.exe" -i -e "s/F80/FF0000/g" src/data/images/icon_base.svg
+
+      - name: Generate red product icon (langbar)
+        shell: pwsh
+        run: |
+          python mozc4med/tool/generate_langbar_icon.py
+
       - name: Colorize icons (red)
         shell: pwsh
         run: |
-          python mozc4med/tool/colorize_icons.py --verbose
+          # product_icon_langbar.ico is generated separately (above) from an SVG
+          # source, so it is excluded here to avoid re-processing it.
+          python mozc4med/tool/colorize_icons.py --verbose --exclude product_icon_langbar.ico
 
       - name: build artifacts
         shell: cmd
