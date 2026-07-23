@@ -1,0 +1,20 @@
+Depends-On: none
+Touch-Files: src/data/dictionary_manual/BUILD.bazel
+Scope: build-metadata
+
+diff --git a/src/data/dictionary_manual/BUILD.bazel b/src/data/dictionary_manual/BUILD.bazel
+index 0000000..1111111 100644
+--- a/src/data/dictionary_manual/BUILD.bazel
++++ b/src/data/dictionary_manual/BUILD.bazel
+@@ -33,10 +33,11 @@ exports_files([
+     "domain.txt",
+ ])
+
+ filegroup(
+     name = "dictionary_manual",
+     srcs = [
++        "mozc4med.tsv",
+         "places.tsv",
+         "words.tsv",
+     ],
+ )
