@@ -72,6 +72,23 @@ class ValidateAndApplyPatchesTest(unittest.TestCase):
         _copy_into_tempdir(temp_path, relative_path)
 
       subprocess.run([git, "init"], cwd=temp_path, check=True)
+      subprocess.run([git, "add", "."], cwd=temp_path, check=True)
+      subprocess.run(
+          [
+              git,
+              "-c",
+              "user.name=Test User",
+              "-c",
+              "user.email=test@example.com",
+              "commit",
+              "-m",
+              "Initial commit",
+          ],
+          cwd=temp_path,
+          check=True,
+          stdout=subprocess.DEVNULL,
+          stderr=subprocess.DEVNULL,
+      )
       subprocess.run(
           [python, "mozc4med/tool/validate_and_apply_patches.py",
            "mozc4med/common"],
