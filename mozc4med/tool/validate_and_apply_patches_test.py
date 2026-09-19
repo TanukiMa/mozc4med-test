@@ -72,6 +72,7 @@ class ValidateAndApplyPatchesTest(unittest.TestCase):
         _copy_into_tempdir(temp_path, relative_path)
 
       subprocess.run([git, "init"], cwd=temp_path, check=True)
+      subprocess.run([git, "checkout", "-b", "dev"], cwd=temp_path, check=True)
       subprocess.run([git, "add", "."], cwd=temp_path, check=True)
       subprocess.run(
           [
