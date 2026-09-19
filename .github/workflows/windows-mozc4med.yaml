@@ -36,6 +36,21 @@ jobs:
         run: |
           python mozc4med/tool/validate_and_apply_patches.py mozc4med/common mozc4med/windows
 
+      - name: Checkout mozc4med-dic-csv (private dictionary source)
+        uses: actions/checkout@v6
+        with:
+          repository: TanukiMa/mozc4med-dic-csv
+          token: ${{ secrets.DIC_CSV_PAT }}
+          path: mozc4med-dic-csv
+          persist-credentials: false
+
+      - name: Generate mozc4med.tsv
+        shell: bash
+        run: |
+          python mozc4med/tool/generate_mozc4med_dictionary.py \
+            --input "mozc4med-dic-csv/example/*.csv" \
+            --output src/data/dictionary_manual/mozc4med.tsv
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -142,6 +157,21 @@ jobs:
         run: |
           python mozc4med/tool/validate_and_apply_patches.py mozc4med/common mozc4med/windows
 
+      - name: Checkout mozc4med-dic-csv (private dictionary source)
+        uses: actions/checkout@v6
+        with:
+          repository: TanukiMa/mozc4med-dic-csv
+          token: ${{ secrets.DIC_CSV_PAT }}
+          path: mozc4med-dic-csv
+          persist-credentials: false
+
+      - name: Generate mozc4med.tsv
+        shell: bash
+        run: |
+          python mozc4med/tool/generate_mozc4med_dictionary.py \
+            --input "mozc4med-dic-csv/example/*.csv" \
+            --output src/data/dictionary_manual/mozc4med.tsv
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -247,6 +277,21 @@ jobs:
         shell: bash
         run: |
           python mozc4med/tool/validate_and_apply_patches.py mozc4med/common mozc4med/windows
+
+      - name: Checkout mozc4med-dic-csv (private dictionary source)
+        uses: actions/checkout@v6
+        with:
+          repository: TanukiMa/mozc4med-dic-csv
+          token: ${{ secrets.DIC_CSV_PAT }}
+          path: mozc4med-dic-csv
+          persist-credentials: false
+
+      - name: Generate mozc4med.tsv
+        shell: bash
+        run: |
+          python mozc4med/tool/generate_mozc4med_dictionary.py \
+            --input "mozc4med-dic-csv/example/*.csv" \
+            --output src/data/dictionary_manual/mozc4med.tsv
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5

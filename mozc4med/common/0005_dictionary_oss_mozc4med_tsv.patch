@@ -1,0 +1,32 @@
+Depends-On: none
+Touch-Files: src/data/dictionary_manual/BUILD.bazel, src/data/dictionary_oss/BUILD.bazel
+Scope: build-metadata
+
+diff --git a/src/data/dictionary_manual/BUILD.bazel b/src/data/dictionary_manual/BUILD.bazel
+index 0000000..1111111 100644
+--- a/src/data/dictionary_manual/BUILD.bazel
++++ b/src/data/dictionary_manual/BUILD.bazel
+@@ -33,10 +33,11 @@ exports_files([
+     "domain.txt",
++    "mozc4med.tsv",
+ ])
+
+ filegroup(
+     name = "dictionary_manual",
+     srcs = [
+         "places.tsv",
+         "words.tsv",
+     ],
+ )
+diff --git a/src/data/dictionary_oss/BUILD.bazel b/src/data/dictionary_oss/BUILD.bazel
+index 0000000..1111111 100644
+--- a/src/data/dictionary_oss/BUILD.bazel
++++ b/src/data/dictionary_oss/BUILD.bazel
+@@ -71,6 +71,7 @@ filegroup(
+         "dictionary07.txt",
+         "dictionary08.txt",
+         "dictionary09.txt",
++        "//data/dictionary_manual:mozc4med.tsv",
+         "//dictionary:zip_code_data",
+     ],
+     visibility = ["//visibility:private"],
