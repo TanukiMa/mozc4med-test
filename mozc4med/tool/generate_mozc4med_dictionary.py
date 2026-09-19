@@ -40,6 +40,8 @@ MIN_COLUMNS = 5  # 読み, 品詞1, 品詞2, コスト, 単語 (付随情報 is 
 DEFAULT_INPUT = os.path.join("mozc4med-dic-csv", "example", "*.csv")
 DEFAULT_OUTPUT = os.path.join("src", "data", "dictionary_manual", "mozc4med.tsv")
 
+# The optional CSV note is preserved while reading/deduping, but the generated
+# raw dictionary output must stay 5 columns.
 # (reading, lid, rid, cost, value, note)
 Row = Tuple[str, str, str, str, str, str]
 
@@ -130,12 +132,10 @@ def main(argv: List[str]) -> int:
   # No header row: this file is consumed as a raw dictionary0*.txt-style
   # entry file (see data/dictionary_oss/BUILD.bazel's base_dictionary_data),
   # not as the 3-column words.tsv/places.tsv "manual dictionary" format.
+  # Emit exactly 5 columns even when the source CSV has optional metadata.
   with open(args.output, "w", encoding="utf-8", newline="\n") as f:
-    for reading, lid, rid, cost, value, note in rows:
-      fields = [reading, lid, rid, cost, value]
-      if note:
-        fields.append(note)
-      f.write("\t".join(fields) + "\n")
+    for reading, lid, rid, cost, value, _note in rows:
+      f.write("\t".join([reading, lid, rid, cost, value]) + "\n")
 
   print(f"[DEBUG] wrote {len(rows)} entries to {args.output}")
   return 0
