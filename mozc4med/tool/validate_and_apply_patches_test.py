@@ -2,6 +2,7 @@
 
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -48,6 +49,11 @@ def _extract_named_rule(build_text: str, rule_name: str) -> str:
 class ValidateAndApplyPatchesTest(unittest.TestCase):
 
   def test_common_dictionary_patch_wires_raw_mozc4med_tsv_once(self):
+    git = shutil.which("git")
+    python = sys.executable
+    if not git or not python:
+      self.skipTest("git and Python are required for patch-application coverage")
+
     patch_text = PATCH_PATH.read_text(encoding="utf-8")
     self.assertIn(
         "Touch-Files: src/data/dictionary_manual/BUILD.bazel, "
@@ -65,9 +71,9 @@ class ValidateAndApplyPatchesTest(unittest.TestCase):
       ):
         _copy_into_tempdir(temp_path, relative_path)
 
-      subprocess.run(["git", "init"], cwd=temp_path, check=True)
+      subprocess.run([git, "init"], cwd=temp_path, check=True)
       subprocess.run(
-          ["python3", "mozc4med/tool/validate_and_apply_patches.py",
+          [python, "mozc4med/tool/validate_and_apply_patches.py",
            "mozc4med/common"],
           cwd=temp_path,
           check=True,
