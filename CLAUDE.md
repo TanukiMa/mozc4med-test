@@ -85,6 +85,24 @@ To prevent patch-to-patch conflicts, all patch authors MUST follow these rules:
 - CI SHOULD validate `Touch-Files` overlap within each category and fail when duplicate ownership is detected, except explicitly declared dependency chains.
 - Apply step MUST run only after all ordered `--check` validations pass.
 
+### 3.7 Track C: Build-Time Data Merge (Non-Patch)
+For simple, order-independent, line-based data files that Bazel reads directly from disk at build time (no parsing/structure beyond plain lines or flat TSV rows), custom mozc4med content MAY be merged in at CI time instead of via a `.patch` file.
+
+- **Eligible files** (currently):
+  - `src/data/dictionary_oss/dictionary*.txt` -- duplicate removal via `mozc4med/tool/rm_dictionary_entries.py`.
+  - `src/data/dictionary_oss/collocation.txt` and `src/data/dictionary_oss/collocation_suppression.txt` -- custom entry append via `mozc4med/tool/append_collocation_entries.py`.
+- **Method**: A `mozc4med/tool/*.py` script edits the CI runner's checked-out working copy of the target file directly, as a workflow step (Track A infrastructure, not Track B). The change is **never committed** and **no `.patch` file is created**, because it does not alter tracked repository content -- only the ephemeral build's working copy. This is valid specifically because the relevant `BUILD.bazel`/`mozc_data.bzl` rule reads that file path's bytes as-is at build time, with no dependency on git history.
+- **When NOT to use this track**: If the target's Bazel consumer only accepts a single-file label (not a list) *and* a plain-text append/removal cannot express the desired change (e.g. it needs real structural merging), extend the Bazel macro/BUILD.bazel via a Track B patch instead of hacking the merge logic.
+- **Required tool interface** (keep every Track C tool's CLI consistent):
+  - `--apply` (default: dry-run only; a bare local run must be side-effect-free).
+  - Every changed/matched line MUST be logged at **INFO**, never DEBUG-only. A log that only shows counts, not which entries changed, is not acceptable (this was a real regression: an early version of `rm_dictionary_entries.py` logged removed lines at DEBUG, so `--log-file` alone showed nothing useful).
+  - `--log-file PATH` -- optional, mirrors console output to a file.
+  - `--<subject>-report PATH` -- optional machine-readable TSV listing every changed line, for auditing/diffing.
+  - `--step-summary PATH` -- optional, appends a Markdown table (intended for `$GITHUB_STEP_SUMMARY`).
+  - `-v/--verbose` -- optional extra, less essential detail (e.g. unmatched/no-op entries) at DEBUG.
+- **Execution order**: Track C steps run after the private `mozc4med-dic-csv` checkout and any TSV/data generation step, and before `Install Dependencies`/any `bazelisk build`/`bazelisk test` step, since Bazel consumes the merged files.
+- **Release vs. test builds**: `build_x64`/`build_arm64` (release) jobs run Track C tools with `--apply` only -- no log file, report, or step summary, to keep release job output lean. The `test` job additionally passes `--log-file`, the report flag, and `--step-summary`, and uploads the log + report as a build artifact; this is where entry-level review happens.
+
 ## 4. Development Phases
 
 ### Phase 1: Infrastructure & UI/Installer Branding (Current)

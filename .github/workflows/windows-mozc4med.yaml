@@ -59,6 +59,24 @@ jobs:
             --dict-dir src/data/dictionary_oss \
             --apply
 
+      - name: Append mozc4med collocation entries
+        shell: bash
+        run: |
+          python mozc4med/tool/append_collocation_entries.py \
+            --input "mozc4med-dic-csv/collocation/*.csv" \
+            --target src/data/dictionary_oss/collocation.txt \
+            --columns 1 \
+            --apply
+
+      - name: Append mozc4med collocation suppression entries
+        shell: bash
+        run: |
+          python mozc4med/tool/append_collocation_entries.py \
+            --input "mozc4med-dic-csv/collocation_suppression/*.csv" \
+            --target src/data/dictionary_oss/collocation_suppression.txt \
+            --columns 2 \
+            --apply
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -186,6 +204,24 @@ jobs:
           python mozc4med/tool/rm_dictionary_entries.py \
             --mozc4med src/data/dictionary_manual/mozc4med.tsv \
             --dict-dir src/data/dictionary_oss \
+            --apply
+
+      - name: Append mozc4med collocation entries
+        shell: bash
+        run: |
+          python mozc4med/tool/append_collocation_entries.py \
+            --input "mozc4med-dic-csv/collocation/*.csv" \
+            --target src/data/dictionary_oss/collocation.txt \
+            --columns 1 \
+            --apply
+
+      - name: Append mozc4med collocation suppression entries
+        shell: bash
+        run: |
+          python mozc4med/tool/append_collocation_entries.py \
+            --input "mozc4med-dic-csv/collocation_suppression/*.csv" \
+            --target src/data/dictionary_oss/collocation_suppression.txt \
+            --columns 2 \
             --apply
 
       - name: Try to restore update_deps cache
@@ -327,6 +363,41 @@ jobs:
           path: |
             rm_dictionary_entries.log
             rm_dictionary_entries_removed.tsv
+          if-no-files-found: warn
+
+      - name: Append mozc4med collocation entries
+        shell: bash
+        run: |
+          python mozc4med/tool/append_collocation_entries.py \
+            --input "mozc4med-dic-csv/collocation/*.csv" \
+            --target src/data/dictionary_oss/collocation.txt \
+            --columns 1 \
+            --apply \
+            --log-file append_collocation_entries.log \
+            --added-report append_collocation_entries_added.tsv \
+            --step-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Append mozc4med collocation suppression entries
+        shell: bash
+        run: |
+          python mozc4med/tool/append_collocation_entries.py \
+            --input "mozc4med-dic-csv/collocation_suppression/*.csv" \
+            --target src/data/dictionary_oss/collocation_suppression.txt \
+            --columns 2 \
+            --apply \
+            --log-file append_collocation_suppression_entries.log \
+            --added-report append_collocation_suppression_entries_added.tsv \
+            --step-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: upload collocation append logs (test)
+        uses: actions/upload-artifact@v6
+        with:
+          name: append-collocation-entries-log-test
+          path: |
+            append_collocation_entries.log
+            append_collocation_entries_added.tsv
+            append_collocation_suppression_entries.log
+            append_collocation_suppression_entries_added.tsv
           if-no-files-found: warn
 
       - name: Try to restore update_deps cache
