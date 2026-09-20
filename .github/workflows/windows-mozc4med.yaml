@@ -51,6 +51,14 @@ jobs:
             --input "mozc4med-dic-csv/example/*.csv" \
             --output src/data/dictionary_manual/mozc4med.tsv
 
+      - name: Remove mozc4med.tsv duplicates from dictionary_oss
+        shell: bash
+        run: |
+          python mozc4med/tool/rm_dictionary_entries.py \
+            --mozc4med src/data/dictionary_manual/mozc4med.tsv \
+            --dict-dir src/data/dictionary_oss \
+            --apply
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -172,6 +180,14 @@ jobs:
             --input "mozc4med-dic-csv/example/*.csv" \
             --output src/data/dictionary_manual/mozc4med.tsv
 
+      - name: Remove mozc4med.tsv duplicates from dictionary_oss
+        shell: bash
+        run: |
+          python mozc4med/tool/rm_dictionary_entries.py \
+            --mozc4med src/data/dictionary_manual/mozc4med.tsv \
+            --dict-dir src/data/dictionary_oss \
+            --apply
+
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
         with:
@@ -292,6 +308,22 @@ jobs:
           python mozc4med/tool/generate_mozc4med_dictionary.py \
             --input "mozc4med-dic-csv/example/*.csv" \
             --output src/data/dictionary_manual/mozc4med.tsv
+
+      - name: Remove mozc4med.tsv duplicates from dictionary_oss
+        shell: bash
+        run: |
+          python mozc4med/tool/rm_dictionary_entries.py \
+            --mozc4med src/data/dictionary_manual/mozc4med.tsv \
+            --dict-dir src/data/dictionary_oss \
+            --apply \
+            --log-file rm_dictionary_entries.log
+
+      - name: upload dictionary removal log (test)
+        uses: actions/upload-artifact@v6
+        with:
+          name: rm-dictionary-entries-log-test
+          path: rm_dictionary_entries.log
+          if-no-files-found: warn
 
       - name: Try to restore update_deps cache
         uses: actions/cache@v5
