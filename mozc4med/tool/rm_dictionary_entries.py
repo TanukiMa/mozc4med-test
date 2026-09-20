@@ -11,6 +11,11 @@ dictionary_oss lines.
 Comparison key: (reading, word) exact match (POS ids and cost are ignored).
 Both files share the same 5-column layout: reading, lid, rid, cost, word.
 
+Every removed line is always logged at INFO level (dict_file:line -> the
+removed line itself), so --log-file alone is enough to audit what was
+deleted; --verbose only adds extra detail about mozc4med pairs that had no
+match at all.
+
 Usage:
     # Dry-run (default): report what would be removed, change nothing.
     python mozc4med/tool/rm_dictionary_entries.py
@@ -21,6 +26,15 @@ Usage:
     # Also write the log to a file (e.g. for CI artifact upload).
     python mozc4med/tool/rm_dictionary_entries.py --apply \
         --log-file rm_dictionary_entries.log
+
+    # Also write a machine-readable TSV report of every removed entry.
+    python mozc4med/tool/rm_dictionary_entries.py --apply \
+        --removed-report rm_dictionary_entries_removed.tsv
+
+    # Also append a Markdown summary table (e.g. to the GitHub Actions
+    # step summary).
+    python mozc4med/tool/rm_dictionary_entries.py --apply \
+        --step-summary "$GITHUB_STEP_SUMMARY"
 
     # Override paths (defaults assume a repo-root working directory).
     python mozc4med/tool/rm_dictionary_entries.py \
@@ -42,6 +56,8 @@ DEFAULT_MOZC4MED = os.path.join("src", "data", "dictionary_manual", "mozc4med.ts
 DEFAULT_DICT_DIR = os.path.join("src", "data", "dictionary_oss")
 
 Pair = Tuple[str, str]
+# (dict_file, line_number, reading, lid, rid, cost, word)
+RemovedRow = Tuple[str, int, str, str, str, str, str]
 
 
 def setup_logging(log_file: Optional[str], verbose: bool) -> None:
@@ -50,6 +66,14 @@ def setup_logging(log_file: Optional[str], verbose: bool) -> None:
   logger.handlers.clear()
 
   fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", "%H:%M:%S")
+
+  # Non-UTF-8 console code pages (e.g. Windows cp1252/cp932) would otherwise
+  # crash on Japanese dictionary entries once those are logged at INFO.
+  if hasattr(sys.stdout, "reconfigure"):
+    try:
+      sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
+    except Exception:
+      pass
 
   console = logging.StreamHandler(sys.stdout)
   console.setFormatter(fmt)
@@ -107,7 +131,7 @@ def process_dictionary_file(
       continue
     if (cols[0], cols[4]) in pairs:
       removed.append((lineno, line))
-      logger.debug("%s:%d: removing -> %s", os.path.basename(path), lineno, line)
+      logger.info("%s:%d: removed -> %s", os.path.basename(path), lineno, line)
     else:
       kept.append(raw)
 
@@ -126,6 +150,32 @@ def process_dictionary_file(
   return len(removed), removed
 
 
+def write_removed_report(path: str, rows: List[RemovedRow]) -> None:
+  """Writes every removed entry as a machine-readable TSV report."""
+  out_dir = os.path.dirname(path)
+  if out_dir:
+    os.makedirs(out_dir, exist_ok=True)
+  with open(path, "w", encoding="utf-8", newline="\n") as f:
+    f.write("dict_file\tline\treading\tlid\trid\tcost\tword\n")
+    for dict_file, lineno, reading, lid, rid, cost, word in rows:
+      f.write(f"{dict_file}\t{lineno}\t{reading}\t{lid}\t{rid}\t{cost}\t{word}\n")
+
+
+def write_step_summary(path: str, rows: List[RemovedRow], total_removed: int) -> None:
+  """Appends a Markdown table of removed entries (e.g. to $GITHUB_STEP_SUMMARY)."""
+  lines = ["### mozc4med: dictionary_oss entries removed as mozc4med.tsv duplicates", ""]
+  if rows:
+    lines.append("| dictionary file | line | reading | word |")
+    lines.append("|---|---|---|---|")
+    for dict_file, lineno, reading, _lid, _rid, _cost, word in rows:
+      lines.append(f"| {dict_file} | {lineno} | {reading} | {word} |")
+    lines.append("")
+  lines.append(f"**Total removed: {total_removed}**")
+  lines.append("")
+  with open(path, "a", encoding="utf-8", newline="\n") as f:
+    f.write("\n".join(lines) + "\n")
+
+
 def parse_args(argv: List[str]) -> argparse.Namespace:
   parser = argparse.ArgumentParser(
       description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -138,8 +188,14 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
                        help="Rewrite dictionary*.txt files (default: dry-run only)")
   parser.add_argument("--log-file", default=None,
                        help="Optional path to also write the log to")
+  parser.add_argument("--removed-report", default=None,
+                       help="Optional TSV path listing every removed entry "
+                            "(dict_file, line, reading, lid, rid, cost, word)")
+  parser.add_argument("--step-summary", default=None,
+                       help="Optional path to append a Markdown summary table to "
+                            "(e.g. $GITHUB_STEP_SUMMARY); ignored if empty")
   parser.add_argument("-v", "--verbose", action="store_true",
-                       help="Log each removed line at DEBUG level")
+                       help="Also log mozc4med pairs that had no match, at DEBUG level")
   return parser.parse_args(argv)
 
 
@@ -177,14 +233,17 @@ def main(argv: List[str]) -> int:
   total_removed = 0
   matched_pairs: Set[Pair] = set()
   per_file_summary: List[Tuple[str, int]] = []
+  removed_rows: List[RemovedRow] = []
 
   for path in dict_files:
     count, removed = process_dictionary_file(path, pairs, apply=args.apply)
     total_removed += count
     per_file_summary.append((os.path.basename(path), count))
-    for _, line in removed:
+    for lineno, line in removed:
       cols = line.split("\t")
-      matched_pairs.add((cols[0], cols[4]))
+      reading, lid, rid, cost, word = cols[0], cols[1], cols[2], cols[3], cols[4]
+      matched_pairs.add((reading, word))
+      removed_rows.append((os.path.basename(path), lineno, reading, lid, rid, cost, word))
 
   logger.info("=== Summary ===")
   for name, count in per_file_summary:
@@ -196,6 +255,15 @@ def main(argv: List[str]) -> int:
   logger.info("mozc4med pairs with no match in dictionary*.txt: %d", len(unmatched))
   for reading, word in sorted(unmatched):
     logger.debug("  unmatched: reading=%r word=%r", reading, word)
+
+  if args.removed_report:
+    write_removed_report(args.removed_report, removed_rows)
+    logger.info("Wrote removed-entry report to %s (%d row(s))",
+                args.removed_report, len(removed_rows))
+
+  if args.step_summary:
+    write_step_summary(args.step_summary, removed_rows, total_removed)
+    logger.info("Appended Markdown summary to %s", args.step_summary)
 
   if not args.apply:
     logger.info("Dry-run: no files were modified. Pass --apply to rewrite them.")

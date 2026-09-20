@@ -316,13 +316,17 @@ jobs:
             --mozc4med src/data/dictionary_manual/mozc4med.tsv \
             --dict-dir src/data/dictionary_oss \
             --apply \
-            --log-file rm_dictionary_entries.log
+            --log-file rm_dictionary_entries.log \
+            --removed-report rm_dictionary_entries_removed.tsv \
+            --step-summary "$GITHUB_STEP_SUMMARY"
 
       - name: upload dictionary removal log (test)
         uses: actions/upload-artifact@v6
         with:
           name: rm-dictionary-entries-log-test
-          path: rm_dictionary_entries.log
+          path: |
+            rm_dictionary_entries.log
+            rm_dictionary_entries_removed.tsv
           if-no-files-found: warn
 
       - name: Try to restore update_deps cache
