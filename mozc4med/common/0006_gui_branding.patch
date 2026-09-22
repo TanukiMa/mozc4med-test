@@ -11,13 +11,13 @@ index 31d1dd2e2..44a7ebc98 100644
  </html>
  <div class="product">
 -<span class="title">Mozc</span>
-+<span class="title">mozc4med</span>
++<span class="title">Mozc4med</span>
  <span class="homepage">
 -<a href="https://github.com/google/mozc">homepage</a></span>
-+<a href="https://github.com/MATANUKI/mozc4med">homepage</a></span>
++<a href="https://github.com/TanukiMa/mozc4med-test">homepage</a></span>
  <div class="licence">
 -<h3>Mozc is licensed as follows:</h3>
-+<h3>mozc4med is based on Mozc, which is licensed as follows:</h3>
++<h3>Mozc4med is based on Mozc, which is licensed as follows:</h3>
  <pre>
  Copyright 2010-2026 Google LLC
  All rights reserved.
@@ -31,8 +31,8 @@ index ea81e0e30..9d9cf98a8 100644
  #else  // GOOGLE_JAPANESE_INPUT_BUILD
 -  Replace(replaced, "[ProductUrl]", "https://github.com/google/mozc");
 -  Replace(replaced, "[ForumUrl]", "https://github.com/google/mozc/issues");
-+  Replace(replaced, "[ProductUrl]", "https://github.com/MATANUKI/mozc4med");
-+  Replace(replaced, "[ForumUrl]", "https://github.com/MATANUKI/mozc4med/issues");
++  Replace(replaced, "[ProductUrl]", "https://github.com/TanukiMa/mozc4med-test");
++  Replace(replaced, "[ForumUrl]", "https://github.com/TanukiMa/mozc4med-test/issues");
    Replace(replaced, "[ForumName]", QObject::tr("issues"));
  #endif  // GOOGLE_JAPANESE_INPUT_BUILD
 
@@ -84,7 +84,7 @@ index 70f81ccf2..0d8497a10 100644
      <message>
          <location filename="tr.cc" line="23"/>
 -        <source>Mozc</source>
-+        <source>mozc4med</source>
++        <source>Mozc4med</source>
          <translation></translation>
      </message>
      <message>
@@ -97,7 +97,7 @@ index a1ef2fb5c..91fbfe3db 100644
    const QString name = QObject::tr("Google Japanese Input");
  #else   // GOOGLE_JAPANESE_INPUT_BUILD
 -  const QString name = QObject::tr("Mozc");
-+  const QString name = QObject::tr("mozc4med");
++  const QString name = QObject::tr("Mozc4med");
  #endif  // GOOGLE_JAPANESE_INPUT_BUILD
    return name;
  }
