@@ -1,0 +1,103 @@
+Depends-On: none
+Touch-Files: src/data/installer/credits_en.html, src/gui/about_dialog/about_dialog.cc, src/gui/about_dialog/about_dialog.ui, src/gui/about_dialog/about_dialog_en.qtts, src/gui/about_dialog/about_dialog_ja.qtts, src/gui/base/tr_ja.qtts, src/gui/base/util.cc
+Scope: branding-string
+
+diff --git a/src/data/installer/credits_en.html b/src/data/installer/credits_en.html
+index 31d1dd2e2..44a7ebc98 100644
+--- a/src/data/installer/credits_en.html
++++ b/src/data/installer/credits_en.html
+@@ -58,11 +58,11 @@ body {
+ </body>
+ </html>
+ <div class="product">
+-<span class="title">Mozc</span>
++<span class="title">mozc4med</span>
+ <span class="homepage">
+-<a href="https://github.com/google/mozc">homepage</a></span>
++<a href="https://github.com/MATANUKI/mozc4med">homepage</a></span>
+ <div class="licence">
+-<h3>Mozc is licensed as follows:</h3>
++<h3>mozc4med is based on Mozc, which is licensed as follows:</h3>
+ <pre>
+ Copyright 2010-2026 Google LLC
+ All rights reserved.
+diff --git a/src/gui/about_dialog/about_dialog.cc b/src/gui/about_dialog/about_dialog.cc
+index ea81e0e30..9d9cf98a8 100644
+--- a/src/gui/about_dialog/about_dialog.cc
++++ b/src/gui/about_dialog/about_dialog.cc
+@@ -68,8 +68,8 @@ QString ReplaceString(const QString &str) {
+           "https://support.google.com/gboard/community?hl=ja");
+   Replace(replaced, "[ForumName]", QObject::tr("product forum"));
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+-  Replace(replaced, "[ProductUrl]", "https://github.com/google/mozc");
+-  Replace(replaced, "[ForumUrl]", "https://github.com/google/mozc/issues");
++  Replace(replaced, "[ProductUrl]", "https://github.com/MATANUKI/mozc4med");
++  Replace(replaced, "[ForumUrl]", "https://github.com/MATANUKI/mozc4med/issues");
+   Replace(replaced, "[ForumName]", QObject::tr("issues"));
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+
+diff --git a/src/gui/about_dialog/about_dialog.ui b/src/gui/about_dialog/about_dialog.ui
+index e015ee90d..60e46eb22 100644
+--- a/src/gui/about_dialog/about_dialog.ui
++++ b/src/gui/about_dialog/about_dialog.ui
+@@ -108,7 +108,7 @@
+         </font>
+        </property>
+        <property name="text">
+-        <string>Copyright 2026 Google LLC. All rights reserved.</string>
++        <string>Copyright 2026 MATANUKI. Portions Copyright 2010-2026 Google LLC.</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+diff --git a/src/gui/about_dialog/about_dialog_en.qtts b/src/gui/about_dialog/about_dialog_en.qtts
+index ab29483f8..247e157e3 100644
+--- a/src/gui/about_dialog/about_dialog_en.qtts
++++ b/src/gui/about_dialog/about_dialog_en.qtts
+@@ -15,7 +15,7 @@
+     </message>
+     <message utf8="true">
+         <location filename="about_dialog.ui" line="80"/>
+-        <source>Copyright 2026 Google LLC. All rights reserved.</source>
++        <source>Copyright 2026 MATANUKI. Portions Copyright 2010-2026 Google LLC.</source>
+         <translation type="unfinished"></translation>
+     </message>
+     <message>
+diff --git a/src/gui/about_dialog/about_dialog_ja.qtts b/src/gui/about_dialog/about_dialog_ja.qtts
+index 17a1f8790..cd9718fec 100644
+--- a/src/gui/about_dialog/about_dialog_ja.qtts
++++ b/src/gui/about_dialog/about_dialog_ja.qtts
+@@ -15,7 +15,7 @@
+     </message>
+     <message utf8="true">
+         <location filename="about_dialog.ui" line="80"/>
+-        <source>Copyright 2026 Google LLC. All rights reserved.</source>
++        <source>Copyright 2026 MATANUKI. Portions Copyright 2010-2026 Google LLC.</source>
+         <translation type="unfinished"></translation>
+     </message>
+     <message>
+diff --git a/src/gui/base/tr_ja.qtts b/src/gui/base/tr_ja.qtts
+index 70f81ccf2..0d8497a10 100644
+--- a/src/gui/base/tr_ja.qtts
++++ b/src/gui/base/tr_ja.qtts
+@@ -10,7 +10,7 @@
+     </message>
+     <message>
+         <location filename="tr.cc" line="23"/>
+-        <source>Mozc</source>
++        <source>mozc4med</source>
+         <translation></translation>
+     </message>
+     <message>
+diff --git a/src/gui/base/util.cc b/src/gui/base/util.cc
+index a1ef2fb5c..91fbfe3db 100644
+--- a/src/gui/base/util.cc
++++ b/src/gui/base/util.cc
+@@ -131,7 +131,7 @@ QString GuiUtil::ProductName() {
+ #ifdef GOOGLE_JAPANESE_INPUT_BUILD
+   const QString name = QObject::tr("Google Japanese Input");
+ #else   // GOOGLE_JAPANESE_INPUT_BUILD
+-  const QString name = QObject::tr("Mozc");
++  const QString name = QObject::tr("mozc4med");
+ #endif  // GOOGLE_JAPANESE_INPUT_BUILD
+   return name;
+ }

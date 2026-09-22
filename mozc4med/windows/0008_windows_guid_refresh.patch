@@ -1,6 +1,11 @@
 Depends-On: 0007_renderer_resource_rebranding.patch
 Touch-Files: src/base/system_util.cc, src/win32/base/tsf_profile.cc, src/win32/tip/tip_text_service.cc, src/win32/tip/tip_lang_bar.cc, src/win32/tip/tip_ui_element_delegate.cc, src/win32/tip/tip_display_attributes.cc, src/win32/tip/tip_lang_bar_menu.h
-Scope: coexistence-guid
+Scope: coexistence-guid, branding-string
+Note: tip_text_service.cc's hunk also rewrites kHelpUrl (branding-string)
+  because it sits immediately before the GUID block this patch already
+  owns; a separate patch would need overlapping/adjacent context lines
+  in the same file per CLAUDE.md 3.6, so it is folded into this hunk
+  instead of split into a new patch.
 
 diff --git a/src/base/system_util.cc b/src/base/system_util.cc
 index 1ea93ffe6..17eaf6621 100644
@@ -148,10 +153,15 @@ diff --git a/src/win32/tip/tip_text_service.cc b/src/win32/tip/tip_text_service.
 index 4ac041eae..9d3dff2e6 100644
 --- a/src/win32/tip/tip_text_service.cc
 +++ b/src/win32/tip/tip_text_service.cc
-@@ -152,33 +152,33 @@ constexpr char kHelpUrl[] = "https://github.com/google/mozc";
+@@ -148,37 +148,37 @@ constexpr GUID kTipFunctionProvider = {
+
+ #else  // GOOGLE_JAPANESE_INPUT_BUILD
+
+-constexpr char kHelpUrl[] = "https://github.com/google/mozc";
++constexpr char kHelpUrl[] = "https://github.com/MATANUKI/mozc4med";
  constexpr wchar_t kTaskWindowClassName[] =
      L"Mozc Immersive Task Message Window";
- 
+
 -// {F16B7D92-84B0-4AC6-A35B-06EA77180A18}
 +// {3E4B4BE2-CBCE-4F9D-9349-3F788A0C8D12}
  constexpr GUID kTipPreservedKey_Kanji = {
