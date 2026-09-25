@@ -158,7 +158,7 @@ index 4ac041eae..9d3dff2e6 100644
  #else  // GOOGLE_JAPANESE_INPUT_BUILD
 
 -constexpr char kHelpUrl[] = "https://github.com/google/mozc";
-+constexpr char kHelpUrl[] = "https://github.com/MATANUKI/mozc4med";
++constexpr char kHelpUrl[] = "https://github.com/TanukiMa/mozc4med-test";
  constexpr wchar_t kTaskWindowClassName[] =
      L"Mozc Immersive Task Message Window";
 
