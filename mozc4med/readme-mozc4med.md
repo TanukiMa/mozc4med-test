@@ -38,9 +38,17 @@
 - TIP / カスタムアクション / キャッシュサービス / レンダラーの `.rc` リソース
   （製品名・会社名・著作権表示）:
   `windows/0004`〜`windows/0007_*_resource_rebranding.patch`
-- Windows/macOS/Unix 製品アイコン: `mozc4med/tool/hue_shift_svg.py` +
-  `generate_icon_from_svg.py` + `colorize_icons.py`（CI 作業コピーへのビルド時マージ、
-  Track C 相当。SVG から `.ico`/`.icns` を再生成するため `.patch` 化していない）
+- Windows 製品アイコン（`.ico`）と About ダイアログ / Unix 側で共有される
+  `product_icon_32bpp-128.png`: `mozc4med/tool/hue_shift_svg.py`
+  （`icon.svg`/`icon_base.svg` の色相を赤へシフト）→
+  `generate_icon_from_svg.py`（そのSVGから `.ico` を再生成。`--png-out`/`--png-size`
+  で同じレンダリングを `product_icon_32bpp-128.png` にも保存 — これが
+  `about_dialog.qrc` 経由で About ダイアログのロゴに、`src/unix/build_icons.py`
+  経由で Linux の `mozc.png` になる）→ `colorize_icons.py`（SVG化されていない
+  残りの `.ico` をファジーカラーマッチで着色）。いずれも CI 作業コピーへの
+  ビルド時マージ（Track C 相当）で、`.patch` 化していない。
+  `windows-mozc4med.yaml` でのみ配線されており、macOS/Linux 向けワークフローの
+  アイコンはまだこのパイプラインの対象外（[非目標](#非目標non-goals)参照）
 
 ### データパス・IPC・レジストリの分離（Phase 2 先行実施分）
 CLAUDE.md では Phase 2 の作業とされているが、`common/0001`/`0002` の時点で

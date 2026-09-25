@@ -9,10 +9,23 @@ at each target resolution and packs the results into a multi-resolution .ico.
 Used for both product_icon_langbar.ico (from icon_base.svg) and
 product_icon.ico (from icon.svg).
 
+--png-out/--png-size additionally save one of the already-rendered
+per-size PNGs to a persistent path, instead of discarding every
+intermediate render along with the temp directory. This is how
+src/data/images/product_icon_32bpp-128.png -- the source for
+src/gui/about_dialog/about_dialog.qrc's "product_logo.png" (the "About
+Mozc4med" dialog's logo) and src/unix/build_icons.py's mozc.png -- is
+kept in sync with the same red-hue-shifted icon.svg that
+product_icon.ico is packed from, instead of staying at its original,
+un-recolored color (colorize_icons.py's .ico recoloring never touched
+it: it globs only src/data/images/win/*.ico, and this PNG lives
+directly under src/data/images/, outside that directory).
+
 Run locally to debug:
 
   python mozc4med/tool/generate_icon_from_svg.py --svg src/data/images/icon.svg \
-      --out src/data/images/win/product_icon.ico
+      --out src/data/images/win/product_icon.ico \
+      --png-out src/data/images/product_icon_32bpp-128.png --png-size 128
 
 Requires ImageMagick's `magick` on PATH. No Python image library needed.
 """
@@ -61,6 +74,16 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
                          help=f"Source SVG (default: {DEFAULT_SVG})")
     parser.add_argument("--out", default=DEFAULT_OUT,
                          help=f"Output .ico path (default: {DEFAULT_OUT})")
+    parser.add_argument(
+        "--png-out", default=None,
+        help="Optional: also save one of the per-size PNG renders here "
+             "(requires --png-size). E.g. to refresh "
+             "src/data/images/product_icon_32bpp-128.png alongside the .ico "
+             "so it uses the same recolored SVG.")
+    parser.add_argument(
+        "--png-size", type=int, default=None,
+        help=f"Pixel size for --png-out; must be one of {SIZES} (the sizes "
+             f"already rendered for the .ico)")
     return parser.parse_args(argv)
 
 
@@ -71,6 +94,15 @@ def main(argv: List[str]) -> int:
         print(f"error: SVG not found: {args.svg}", file=sys.stderr)
         return 1
 
+    if bool(args.png_out) != bool(args.png_size):
+        print("error: --png-out and --png-size must be given together",
+              file=sys.stderr)
+        return 1
+    if args.png_size is not None and args.png_size not in SIZES:
+        print(f"error: --png-size {args.png_size} is not one of {SIZES}",
+              file=sys.stderr)
+        return 1
+
     tmpdir = tempfile.mkdtemp(prefix="svg_icon_")
     try:
         pngs = []
@@ -78,6 +110,13 @@ def main(argv: List[str]) -> int:
             out_png = os.path.join(tmpdir, f"temp_{size}.png")
             render_png(args.svg, size, out_png)
             pngs.append(out_png)
+            if size == args.png_size:
+                png_out_dir = os.path.dirname(args.png_out)
+                if png_out_dir:
+                    os.makedirs(png_out_dir, exist_ok=True)
+                shutil.copyfile(out_png, args.png_out)
+                print(f"[DEBUG] also wrote {args.png_out} (size={size}, "
+                      f"same render used in {args.out})")
 
         out_dir = os.path.dirname(args.out)
         if out_dir:

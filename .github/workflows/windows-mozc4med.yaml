@@ -133,7 +133,9 @@ jobs:
             --out src/data/images/win/product_icon_langbar.ico
           python mozc4med/tool/generate_icon_from_svg.py `
             --svg src/data/images/icon.svg `
-            --out src/data/images/win/product_icon.ico
+            --out src/data/images/win/product_icon.ico `
+            --png-out src/data/images/product_icon_32bpp-128.png `
+            --png-size 128
 
       - name: Colorize icons (red)
         shell: pwsh
@@ -294,7 +296,9 @@ jobs:
             --out src/data/images/win/product_icon_langbar.ico
           python mozc4med/tool/generate_icon_from_svg.py `
             --svg src/data/images/icon.svg `
-            --out src/data/images/win/product_icon.ico
+            --out src/data/images/win/product_icon.ico `
+            --png-out src/data/images/product_icon_32bpp-128.png `
+            --png-size 128
 
       - name: Colorize icons (red)
         shell: pwsh
