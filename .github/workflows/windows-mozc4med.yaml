@@ -153,6 +153,20 @@ jobs:
         run: |
           bazelisk build --config oss_windows --config release_build package
 
+      - name: Check for upstream Mozc identity markers (Phase 2 guard)
+        shell: bash
+        run: |
+          python mozc4med/tool/check_no_upstream_identifiers.py \
+            --report check_no_upstream_identifiers_x64.tsv \
+            --step-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: upload upstream identifier check report (x64)
+        uses: actions/upload-artifact@v6
+        with:
+          name: check-no-upstream-identifiers-x64
+          path: check_no_upstream_identifiers_x64.tsv
+          if-no-files-found: warn
+
       - name: upload Mozc4med_x64.msi
         uses: actions/upload-artifact@v6
         with:
@@ -300,6 +314,20 @@ jobs:
         run: |
           bazelisk build package --config oss_windows --config release_build --platforms=//:windows-arm64
 
+      - name: Check for upstream Mozc identity markers (Phase 2 guard)
+        shell: bash
+        run: |
+          python mozc4med/tool/check_no_upstream_identifiers.py \
+            --report check_no_upstream_identifiers_arm64.tsv \
+            --step-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: upload upstream identifier check report (arm64)
+        uses: actions/upload-artifact@v6
+        with:
+          name: check-no-upstream-identifiers-arm64
+          path: check_no_upstream_identifiers_arm64.tsv
+          if-no-files-found: warn
+
       - name: upload Mozc4med_arm64.msi
         uses: actions/upload-artifact@v6
         with:
@@ -412,6 +440,39 @@ jobs:
         # This command uses src/third_party_cache as the download cache.
         run: |
           python build_tools/update_deps.py
+
+      - name: Build evaluation snapshot
+        shell: cmd
+        working-directory: .\src
+        env:
+          ANDROID_NDK_HOME: ""
+        run: |
+          bazelisk build //data/dictionary_oss:evaluation --config oss_windows -c dbg
+
+      - name: Compare evaluation quality
+        shell: bash
+        # Gates on OK->FAILED regressions caused by the dictionary/collocation
+        # edits above; if the gate passes, syncs evaluation.tsv from the
+        # Bazel-generated snapshot so the evaluation_diff_test that runs as
+        # part of `runtests` below sees a matching working copy instead of
+        # failing with an opaque byte-diff. See
+        # mozc4med/tool/compare_evaluation_quality.py's module docstring.
+        run: |
+          python mozc4med/tool/compare_evaluation_quality.py \
+            --after src/bazel-bin/data/dictionary_oss/evaluation_updated.tsv \
+            --apply \
+            --log-file compare_evaluation_quality.log \
+            --quality-report compare_evaluation_quality.tsv \
+            --step-summary "$GITHUB_STEP_SUMMARY"
+
+      - name: upload evaluation quality report (test)
+        uses: actions/upload-artifact@v6
+        with:
+          name: compare-evaluation-quality-log-test
+          path: |
+            compare_evaluation_quality.log
+            compare_evaluation_quality.tsv
+          if-no-files-found: warn
 
       - name: runtests
         shell: cmd
