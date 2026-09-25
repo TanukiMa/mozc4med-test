@@ -96,7 +96,7 @@ For simple, order-independent, line-based data files that Bazel reads directly f
 - **When NOT to use this track**: If the target's Bazel consumer only accepts a single-file label (not a list) *and* a plain-text append/removal cannot express the desired change (e.g. it needs real structural merging), extend the Bazel macro/BUILD.bazel via a Track B patch instead of hacking the merge logic.
 - **Required tool interface** (keep every Track C tool's CLI consistent):
   - `--apply` (default: dry-run only; a bare local run must be side-effect-free).
-  - Every changed/matched line MUST be logged at **INFO**, never DEBUG-only. A log that only shows counts, not which entries changed, is not acceptable (this was a real regression: an early version of `rm_dictionary_entries.py` logged removed lines at DEBUG, so `--log-file` alone showed nothing useful).
+  - Every changed/matched line MUST be logged at **INFO**, never DEBUG-only. A log that only shows counts, not which entries changed, is not acceptable.
   - `--log-file PATH` -- optional, mirrors console output to a file.
   - `--<subject>-report PATH` -- optional machine-readable TSV listing every changed line, for auditing/diffing.
   - `--step-summary PATH` -- optional, appends a Markdown table (intended for `$GITHUB_STEP_SUMMARY`).
@@ -116,14 +116,11 @@ Even though full data/IPC/registry isolation is scoped to Phase 2 (Section 4), t
 ### Phase 1: Infrastructure & UI/Installer Branding (Current)
 - **Step 1 (Infra)**: Update all `.github/workflows/*.yaml` to:
   1. Change `on:` to `workflow_dispatch:`.
-  2. Insert a "Patch Application" step before the Bazel build:
-     ```bash
-     # Logic: verify all patches first, then apply
-     git apply --check mozc4med/common/*.patch
-     git apply --check mozc4med/[target_os]/*.patch
-     git apply mozc4med/common/*.patch
-     git apply mozc4med/[target_os]/*.patch
-     ```
+  2. Insert a "Patch Application" step before the Bazel build that runs
+     `mozc4med/tool/validate_and_apply_patches.py mozc4med/common mozc4med/[target_os]`
+     -- this is the single tool that implements the metadata/overlap/ordered-`--check`
+     logic required by §3.6. Never hand-roll a raw `git apply --check *.patch`
+     wildcard loop here; §3.6 explicitly requires per-patch, index-ordered checks.
 - **Step 2 (Branding)**: Create patches to update "Mozc" to "mozc4med" in UI strings and Installer metadata (ProductName, Manufacturer, etc.).
 - **Note**: **DO NOT** rename internal Bazel targets or binary filenames yet.
 
