@@ -39,3 +39,65 @@ index 9f35e9df8..192bd222c 100644
      seg->clear_candidates();
    }
  }
+@@ -820,22 +818,15 @@ TEST_F(VariantsRewriterTest, RewriteForMixedConversion) {
+     candidate->inner_segment_boundary = converter::BuildInnerSegmentBoundary(
+         {{6, 3, 6, 3}, {6, 3, 6, 3}}, candidate->key, candidate->value);
+ 
+-    EXPECT_TRUE(rewriter->Rewrite(conv_request, &segments));
++    // mozc4med: patch 0007 suppresses alternative generation for
++    // candidates whose value contains katakana (inner segments included),
++    // so "３円" is not rewritten to "3円".
++    EXPECT_FALSE(rewriter->Rewrite(conv_request, &segments));
+ 
+     ASSERT_EQ(segments.segments_size(), 1);
+-    ASSERT_EQ(segments.segment(0).candidates_size(), 2);
+-
+-    // Since the character form preference is set to Config::HALF_WIDTH, the
+-    // half-width variant comes first.
+-    const converter::Candidate& half = segments.segment(0).candidate(0);
+-    EXPECT_EQ(half.key, "さんえん");
+-    EXPECT_EQ(half.value, "3円");
+-    ASSERT_EQ(half.inner_segment_boundary.size(), 2);
+-    EXPECT_EQ(half.inner_segment_boundary,
+-              converter::BuildInnerSegmentBoundary({{6, 1, 6, 1}, {6, 3, 6, 3}},
+-                                                   half.key, half.value));
+-
+-    const converter::Candidate& full = segments.segment(0).candidate(1);
++    ASSERT_EQ(segments.segment(0).candidates_size(), 1);
++
++    const converter::Candidate& full = segments.segment(0).candidate(0);
+     EXPECT_EQ(full.key, "さんえん");
+     EXPECT_EQ(full.value, "３円");
+     ASSERT_EQ(full.inner_segment_boundary.size(), 2);
+@@ -958,23 +949,22 @@ TEST_F(VariantsRewriterTest, RewriteForSuggestion) {
+         },
+         candidate->key, candidate->value);
+ 
+-    EXPECT_TRUE(rewriter->Rewrite(request, &segments));
++    // mozc4med: patch 0007 suppresses alternative generation for
++    // candidates whose value contains katakana (inner segments included),
++    // so "マジ!" is not rewritten to "マジ！".
++    EXPECT_FALSE(rewriter->Rewrite(request, &segments));
+     ASSERT_EQ(segments.segments_size(), 1);
+     ASSERT_EQ(segments.segment(0).candidates_size(), 1);
+ 
+     const converter::Candidate& rewritten_candidate =
+         segments.segment(0).candidate(0);
+-    EXPECT_EQ(rewritten_candidate.value, "マジ！");  // "マジ！" (full-width)
+-    EXPECT_EQ(rewritten_candidate.content_value,
+-              "マジ！");  // "マジ！" (full-width)
++    EXPECT_EQ(rewritten_candidate.value, "マジ!");
++    EXPECT_EQ(rewritten_candidate.content_value, "マジ!");
+     EXPECT_EQ(rewritten_candidate.inner_segment_boundary,
+               converter::BuildInnerSegmentBoundary(
+                   {
+-                      // key="まじ", value="マジ", ckey="まじ", cvalue="マジ"
+-                      {6, 6, 6, 6},
+-                      // key="!", value="！", ckey="!", cvalue="！".
+-                      // Values are converted to full-width.
+-                      {1, 3, 1, 3}  // 1 byte for "!"
++                      {6, 6, 6, 6},  // 6 bytes for "まじ" / "マジ"
++                      {1, 1, 1, 1}   // 1 byte for "!"
+                   },
+                   rewritten_candidate.key, rewritten_candidate.value));
+   }
