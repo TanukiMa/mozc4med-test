@@ -1,5 +1,5 @@
 Depends-On: none
-Touch-Files: src/rewriter/variants_rewriter.cc
+Touch-Files: src/rewriter/variants_rewriter.cc, src/rewriter/variants_rewriter_test.cc
 Scope: candidate-filtering
 
 diff --git a/src/rewriter/variants_rewriter.cc b/src/rewriter/variants_rewriter.cc
@@ -18,3 +18,24 @@ index ae78e41cb..bee8861b5 100644
    const config::CharacterFormManager* manager =
        CharacterFormManager::GetCharacterFormManager();
  
+diff --git a/src/rewriter/variants_rewriter_test.cc b/src/rewriter/variants_rewriter_test.cc
+index 9f35e9df8..192bd222c 100644
+--- a/src/rewriter/variants_rewriter_test.cc
++++ b/src/rewriter/variants_rewriter_test.cc
+@@ -194,12 +194,10 @@ TEST_F(VariantsRewriterTest, RewriteTest) {
+     CharacterFormManager::GetCharacterFormManager()->AddConversionRule(
+         "アイウ", Config::HALF_WIDTH);
+ 
+-    EXPECT_TRUE(rewriter->Rewrite(request, &segments));
+-    EXPECT_EQ(seg->candidates_size(), 2);
+-    EXPECT_EQ(seg->candidate(0).value, "ｸﾞｰｸﾞﾙ");
+-    EXPECT_EQ(seg->candidate(0).content_value, "ｸﾞｰｸﾞﾙ");
+-    EXPECT_EQ(seg->candidate(1).value, "グーグル");
+-    EXPECT_EQ(seg->candidate(1).content_value, "グーグル");
++    EXPECT_FALSE(rewriter->Rewrite(request, &segments));
++    EXPECT_EQ(seg->candidates_size(), 1);
++    EXPECT_EQ(seg->candidate(0).value, "グーグル");
++    EXPECT_EQ(seg->candidate(0).content_value, "グーグル");
+     seg->clear_candidates();
+   }
+ }
