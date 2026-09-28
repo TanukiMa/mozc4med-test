@@ -3,6 +3,7 @@ Touch-Files: src/rewriter/variants_rewriter.cc, src/rewriter/variants_rewriter_t
 Scope: candidate-filtering
 
 diff --git a/src/rewriter/variants_rewriter.cc b/src/rewriter/variants_rewriter.cc
+index bee8861b5..c68259bc5 100644
 --- a/src/rewriter/variants_rewriter.cc
 +++ b/src/rewriter/variants_rewriter.cc
 @@ -517,6 +517,12 @@ bool VariantsRewriter::GenerateAlternatives(
@@ -19,6 +20,7 @@ diff --git a/src/rewriter/variants_rewriter.cc b/src/rewriter/variants_rewriter.
        CharacterFormManager::GetCharacterFormManager();
  
 diff --git a/src/rewriter/variants_rewriter_test.cc b/src/rewriter/variants_rewriter_test.cc
+index 9f35e9df8..b5595533d 100644
 --- a/src/rewriter/variants_rewriter_test.cc
 +++ b/src/rewriter/variants_rewriter_test.cc
 @@ -202,6 +202,20 @@ TEST_F(VariantsRewriterTest, RewriteTest) {
