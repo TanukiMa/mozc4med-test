@@ -517,6 +517,11 @@ bool VariantsRewriter::GenerateAlternatives(
   primary_inner_segment_boundary->clear();
   secondary_inner_segment_boundary->clear();
 
+  // mozc4med: カタカナ主体の値には半角カナ変換候補を生成しない。
+  if (Util::GetScriptTypeWithoutSymbols(original.value) == Util::KATAKANA) {
+    return false;
+  }
+
   const config::CharacterFormManager* manager =
       CharacterFormManager::GetCharacterFormManager();
 

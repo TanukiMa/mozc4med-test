@@ -32,7 +32,7 @@
 #include <string>
 
 #ifndef MOZC_IBUS_INSTALL_DIR
-#define MOZC_IBUS_INSTALL_DIR "/usr/share/ibus-mozc"
+#define MOZC_IBUS_INSTALL_DIR "/usr/share/ibus-mozc4med"
 #endif  // MOZC_IBUS_INSTALL_DIR
 
 namespace mozc {
