@@ -194,10 +194,12 @@ TEST_F(VariantsRewriterTest, RewriteTest) {
     CharacterFormManager::GetCharacterFormManager()->AddConversionRule(
         "アイウ", Config::HALF_WIDTH);
 
-    EXPECT_FALSE(rewriter->Rewrite(request, &segments));
-    EXPECT_EQ(seg->candidates_size(), 1);
-    EXPECT_EQ(seg->candidate(0).value, "グーグル");
-    EXPECT_EQ(seg->candidate(0).content_value, "グーグル");
+    EXPECT_TRUE(rewriter->Rewrite(request, &segments));
+    EXPECT_EQ(seg->candidates_size(), 2);
+    EXPECT_EQ(seg->candidate(0).value, "ｸﾞｰｸﾞﾙ");
+    EXPECT_EQ(seg->candidate(0).content_value, "ｸﾞｰｸﾞﾙ");
+    EXPECT_EQ(seg->candidate(1).value, "グーグル");
+    EXPECT_EQ(seg->candidate(1).content_value, "グーグル");
     seg->clear_candidates();
   }
 }

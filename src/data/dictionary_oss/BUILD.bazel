@@ -71,7 +71,6 @@ filegroup(
         "dictionary07.txt",
         "dictionary08.txt",
         "dictionary09.txt",
-        "//data/dictionary_manual:mozc4med.tsv",
         "//dictionary:zip_code_data",
     ],
     visibility = ["//visibility:private"],
