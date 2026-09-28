@@ -68,8 +68,8 @@ QString ReplaceString(const QString &str) {
           "https://support.google.com/gboard/community?hl=ja");
   Replace(replaced, "[ForumName]", QObject::tr("product forum"));
 #else  // GOOGLE_JAPANESE_INPUT_BUILD
-  Replace(replaced, "[ProductUrl]", "https://github.com/TanukiMa/mozc4med-test");
-  Replace(replaced, "[ForumUrl]", "https://github.com/TanukiMa/mozc4med-test/issues");
+  Replace(replaced, "[ProductUrl]", "https://github.com/google/mozc");
+  Replace(replaced, "[ForumUrl]", "https://github.com/google/mozc/issues");
   Replace(replaced, "[ForumName]", QObject::tr("issues"));
 #endif  // GOOGLE_JAPANESE_INPUT_BUILD
 

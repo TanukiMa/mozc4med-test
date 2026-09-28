@@ -1,20 +1,44 @@
 Depends-On: none
-Touch-Files: src/rewriter/variants_rewriter.cc
+Touch-Files: src/rewriter/variants_rewriter.cc, src/rewriter/variants_rewriter_test.cc
 Scope: candidate-filtering
 
 diff --git a/src/rewriter/variants_rewriter.cc b/src/rewriter/variants_rewriter.cc
-index ae78e41cb..bee8861b5 100644
 --- a/src/rewriter/variants_rewriter.cc
 +++ b/src/rewriter/variants_rewriter.cc
-@@ -517,6 +517,11 @@ bool VariantsRewriter::GenerateAlternatives(
+@@ -517,6 +517,12 @@ bool VariantsRewriter::GenerateAlternatives(
    primary_inner_segment_boundary->clear();
    secondary_inner_segment_boundary->clear();
  
-+  // mozc4med: カタカナ主体の値には半角カナ変換候補を生成しない。
-+  if (Util::GetScriptTypeWithoutSymbols(original.value) == Util::KATAKANA) {
++  // mozc4med: 記号付きのカタカナ語には半角カナ変換候補を生成しない。
++  if (Util::GetScriptTypeWithoutSymbols(original.value) == Util::KATAKANA &&
++      Util::GetScriptType(original.value) == Util::UNKNOWN_SCRIPT) {
 +    return false;
 +  }
 +
    const config::CharacterFormManager* manager =
        CharacterFormManager::GetCharacterFormManager();
  
+diff --git a/src/rewriter/variants_rewriter_test.cc b/src/rewriter/variants_rewriter_test.cc
+--- a/src/rewriter/variants_rewriter_test.cc
++++ b/src/rewriter/variants_rewriter_test.cc
+@@ -202,6 +202,20 @@ TEST_F(VariantsRewriterTest, RewriteTest) {
+     EXPECT_EQ(seg->candidate(1).content_value, "グーグル");
+     seg->clear_candidates();
+   }
++
++  {
++    converter::Candidate* candidate = seg->add_candidate();
++    candidate->value = "クラビット®";
++    candidate->content_value = "クラビット®";
++    CharacterFormManager::GetCharacterFormManager()->AddConversionRule(
++        "アイウ", Config::HALF_WIDTH);
++
++    EXPECT_FALSE(rewriter->Rewrite(request, &segments));
++    EXPECT_EQ(seg->candidates_size(), 1);
++    EXPECT_EQ(seg->candidate(0).value, "クラビット®");
++    EXPECT_EQ(seg->candidate(0).content_value, "クラビット®");
++    seg->clear_candidates();
++  }
+ }
+ 
+ TEST_F(VariantsRewriterTest, RewriteTestManyCandidates) {
