@@ -200,6 +200,11 @@ std::string UserProfileDirectoryImpl::GetUserProfileDirectory() const {
     if (absl::Status s = FileUtil::CreateDirectory(dir); !s.ok()) {
       LOG(ERROR) << s;
     }
+#else
+    dir = FileUtil::JoinPath(dir, "MATANUKI");
+    if (absl::Status s = FileUtil::CreateDirectory(dir); !s.ok()) {
+      LOG(ERROR) << s;
+    }
 #endif  // GOOGLE_JAPANESE_INPUT_BUILD
     return FileUtil::JoinPath(dir, kProductNameInEnglish);
 
@@ -212,16 +217,16 @@ std::string UserProfileDirectoryImpl::GetUserProfileDirectory() const {
     ::mkdir(dir.c_str(), 0755);
     return FileUtil::JoinPath(dir, "JapaneseInput");
 #else   //  GOOGLE_JAPANESE_INPUT_BUILD
-    return FileUtil::JoinPath(dir, "Mozc");
+    return FileUtil::JoinPath(dir, "Mozc4med");
 #endif  //  GOOGLE_JAPANESE_INPUT_BUILD
 
 #elif defined(__linux__)
-    // 1. If "$HOME/.mozc" already exists,
-    //    use "$HOME/.mozc" for backward compatibility.
+    // 1. If "$HOME/.mozc4med" already exists,
+    //    use "$HOME/.mozc4med" for backward compatibility.
     // 2. If $XDG_CONFIG_HOME is defined
-    //    use "$XDG_CONFIG_HOME/mozc".
+    //    use "$XDG_CONFIG_HOME/mozc4med".
     // 3. Otherwise
-    //    use "$HOME/.config/mozc" as the default value of $XDG_CONFIG_HOME
+    //    use "$HOME/.config/mozc4med" as the default value of $XDG_CONFIG_HOME
     // https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
     const std::string home = Environ::GetEnv("HOME");
     if (home.empty()) {
@@ -232,19 +237,19 @@ std::string UserProfileDirectoryImpl::GetUserProfileDirectory() const {
           << "Can't get passwd entry for uid " << uid << ".";
       CHECK_LT(0, strlen(pw.pw_dir))
           << "Home directory for uid " << uid << " is not set.";
-      return FileUtil::JoinPath(pw.pw_dir, ".mozc");
+      return FileUtil::JoinPath(pw.pw_dir, ".mozc4med");
     }
 
-    std::string old_dir = FileUtil::JoinPath(home, ".mozc");
+    std::string old_dir = FileUtil::JoinPath(home, ".mozc4med");
     if (FileUtil::DirectoryExists(old_dir).ok()) {
       return old_dir;
     }
 
     const std::string xdg_config_home = Environ::GetEnv("XDG_CONFIG_HOME");
     if (!xdg_config_home.empty()) {
-      return FileUtil::JoinPath(xdg_config_home, "mozc");
+      return FileUtil::JoinPath(xdg_config_home, "mozc4med");
     }
-    return FileUtil::JoinPath(home, ".config/mozc");
+    return FileUtil::JoinPath(home, ".config/mozc4med");
 
 #else  // Supported platforms
     LOG(ERROR) << "Undefined target platform.";
@@ -283,7 +288,7 @@ constexpr wchar_t kMozcTipClsid[] =
 #ifdef GOOGLE_JAPANESE_INPUT_BUILD
     L"{D5A86FD5-5308-47EA-AD16-9C4EB160EC3C}"
 #else   // GOOGLE_JAPANESE_INPUT_BUILD
-    L"{10A67BC8-22FA-4A59-90DC-2546652C56BF}"
+    L"{611B3B7D-1DAE-4D4E-BD79-33192804156D}"
 #endif  // GOOGLE_JAPANESE_INPUT_BUILD
     L"\\InprocServer32";
 

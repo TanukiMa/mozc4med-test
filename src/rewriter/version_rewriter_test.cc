@@ -109,7 +109,8 @@ TEST_F(VersionRewriterTest, RewriteTestVersion) {
   constexpr absl::string_view kVersionPrefixExpected = "GoogleJapaneseInput-";
   constexpr absl::string_view kVersionPrefixUnexpected = "Mozc-";
 #else   // GOOGLE_JAPANESE_INPUT_BUILD
-  constexpr absl::string_view kVersionPrefixExpected = "Mozc-";
+  // After re‑branding the product name is “Mozc4med”.
+  constexpr absl::string_view kVersionPrefixExpected = "Mozc4med-";
   constexpr absl::string_view kVersionPrefixUnexpected = "GoogleJapaneseInput-";
 #endif  // GOOGLE_JAPANESE_INPUT_BUILD
 
