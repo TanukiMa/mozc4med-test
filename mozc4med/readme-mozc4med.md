@@ -46,10 +46,14 @@
   `generate_icon_from_svg.py`（そのSVGから `.ico` を再生成。`--png-out`/`--png-size`
   で同じレンダリングを `product_icon_32bpp-128.png` にも保存 — これが
   `about_dialog.qrc` 経由で About ダイアログのロゴに、`src/unix/build_icons.py`
-  経由で Linux の `mozc.png` になる）。`src/data/images/win/` の残りの `.ico`
-  （`ms_*_a.ico` などのモード表示アイコンの大きな変種、`ms_*.ico` / `tools_*.ico`
-  の 16x16）も、元の解像度構成を保ったまま同じ SVG から生成する（`*_a.ico` は
-  8 サイズ、それ以外は `--sizes 16`）。そのため全アイコンが同一デザインになる。
+  経由で Linux の `mozc.png` になる）。`src/data/images/win/` の残りの `.ico` は
+  `generate_win_mode_icons.py` が、元の解像度構成（`*_a.ico` は 8 サイズ、それ以外は
+  16x16）を保ったまま生成する:
+  入力モード表示（`ms_hiragana` / `ms_katakana` / `ms_katakana_half` /
+  `ms_alpha` / `ms_alpha_half` / `ms_direct_input`）は同じ三つの円に、
+  上流の `ms_*.svg` の文字（あ・ア・ｱ・A・_A など）を重ねる（24px 以下は文字を
+  全面に出し円を薄くする）。`ms_disabled*` は円をグレーにしたもの、`tools_*`
+  （上流に文字 SVG がない）は円のみ。
   `hue_shift_svg.py` / `colorize_icons.py` は現在ワークフローから呼ばれていない。
   いずれも CI 作業コピーへの
   ビルド時マージ（Track C 相当）で、`.patch` 化していない。

@@ -14,11 +14,14 @@ Phase ごとの方針は `readme-mozc4med.md` にあります。
     CI 作業コピーの `src/data/images/icon.svg` と `icon_base.svg` (言語バー用) を上書き (コミットしない)
   - `hue_shift_svg.py` と `colorize_icons.py` のステップを削除 (ツール自体は残してある)
   - `product_icon.ico` / `product_icon_langbar.ico` はどちらも新 SVG から生成される
-  - 残りの `src/data/images/win/*.ico` (`ms_*_a.ico`、`ms_*.ico`、`tools_*.ico`) も同じ SVG から生成
+  - 残りの `src/data/images/win/*.ico` は `tool/generate_win_mode_icons.py` で生成
     (`*_a.ico` は 8 サイズ、それ以外は 16x16 のみ)
+    - 入力モード表示 (`ms_hiragana` / `ms_katakana` / `ms_katakana_half` / `ms_alpha` /
+      `ms_alpha_half` / `ms_direct_input`): 上流の `ms_*.svg` の文字を三つの円に重ねる
+      (24px 以下は文字を全面に出し、円を薄くする)
+    - `ms_disabled*`: 円をグレーにしたもの
+    - `tools_*`: 上流に文字 SVG がないため円のみ
   - `tool/generate_icon_from_svg.py` に `--sizes` オプションを追加 (テストも追加)
-  - 注意: 入力モード (ひらがな / カタカナ / 直接入力 など) を示すアイコンが全て同一になる
-  - About ダイアログのロゴ (`product_icon_32bpp-128.png`) と Linux の `mozc.png` も同じ SVG から生成される
 
 ## 2026‑09‑28
 - `common/0007_disable_half_width_katakana_variant.patch` (Scope: candidate-filtering)
