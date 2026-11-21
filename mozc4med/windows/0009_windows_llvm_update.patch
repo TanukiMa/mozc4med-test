@@ -1,0 +1,42 @@
+Depends-On: none
+Touch-Files: src/build_tools/update_deps.py, docs/build_mozc_in_windows.md
+Scope: windows-toolchain-compatibility
+
+diff --git a/src/build_tools/update_deps.py b/src/build_tools/update_deps.py
+--- a/src/build_tools/update_deps.py
++++ b/src/build_tools/update_deps.py
+@@ -118,16 +118,16 @@
+     sha256='e52f0bdef9dfb1003229dbd6508a508c4073fd017247002adc66e5e806cb0391',
+ )
+ 
+ LLVM_WIN = ArchiveInfo(
+-    url='https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.1/clang+llvm-20.1.1-x86_64-pc-windows-msvc.tar.xz',
+-    size=939286624,
+-    sha256='f8114cb674317e8a303731b1f9d22bf37b8c571b64f600abe528e92275ed4ace',
++    url='https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.6/clang+llvm-23.1.6-x86_64-pc-windows-msvc.tar.xz',
++    size=901284676,
++    sha256='16af05919cf36958dfb4ddaa4fc4d9d4ff577f5daeb76bc112ea49cd8ced82b2',
+ )
+ 
+ LLVM_WIN_ARM64 = ArchiveInfo(
+-    url='https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.1/clang+llvm-20.1.1-aarch64-pc-windows-msvc.tar.xz',
+-    size=900502024,
+-    sha256='6ee4c1a8c51cf081e19a7225d802d160cc888cdc3a8da07dcbdb5768e3160244',
++    url='https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.6/clang+llvm-23.1.6-aarch64-pc-windows-msvc.tar.xz',
++    size=760067264,
++    sha256='fa5a25df6a1405fdfb9942f4d5cc73bfc3b8b31cfd43ee2fbd43bd2e3168be01',
+ )
+ 
+ MSYS2 = ArchiveInfo(
+diff --git a/docs/build_mozc_in_windows.md b/docs/build_mozc_in_windows.md
+--- a/docs/build_mozc_in_windows.md
++++ b/docs/build_mozc_in_windows.md
+@@ -81,7 +81,7 @@
+ 
+ In this step, additional build dependencies will be downloaded, including:
+ 
+-*   [LLVM 20.1.1](https://github.com/llvm/llvm-project/releases/tag/llvmorg-20.1.1)
++*   [LLVM 23.1.6](https://github.com/llvm/llvm-project/releases/tag/llvmorg-23.1.6)
+ *   [MSYS2 2025-02-21](https://github.com/msys2/msys2-installer/releases/tag/2025-02-21)
+ *   [Ninja 1.11.0](https://github.com/ninja-build/ninja/releases/tag/v1.11.0)
+ *   [Qt 6.9.1](https://download.qt.io/archive/qt/6.8/6.8.0/submodules/qtbase-everywhere-src-6.9.1.tar.xz)

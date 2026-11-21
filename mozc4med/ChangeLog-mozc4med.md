@@ -5,6 +5,9 @@
 Phase ごとの方針は `readme-mozc4med.md` にあります。
 
 ## 2026‑11‑21
+- Windows用LLVM依存関係を23.1.6に更新するパッチを追加
+  - Visual Studio 2026のMSVC標準ライブラリが要求するClang 22以上に対応
+  - Windows x64/ARM64の依存定義とWindowsビルド手順を更新
 - 製品アイコンを独自デザインに変更
   - `assets/icon.svg` を追加 (緑・赤・青の 3 つの円。背景は透過)
   - `windows-mozc4med.yaml` (`build_x64` / `build_arm64`) に「Install mozc4med icon SVGs」ステップを追加し、
