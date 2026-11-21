@@ -114,18 +114,18 @@ jobs:
           $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
           $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
-      - name: Patch icon SVG colors (hue shift)
+      - name: Install mozc4med icon SVGs
         shell: pwsh
         run: |
-          # Recolor the SVG sources in the runner's working copy only -- the
-          # tracked repository files are left untouched. Shifts every color's
-          # hue to red while preserving its saturation/lightness, so
-          # gradients and shading are kept instead of just replacing one
-          # hard-coded orange literal.
-          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon_base.svg --verbose
-          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon.svg --verbose
+          # Replace the upstream product icon (icon.svg) and language bar icon
+          # (icon_base.svg) with the single mozc4med original design, in the
+          # runner's working copy only -- the tracked src/ files are left
+          # untouched (never committed). No hue shift is applied: the SVG's
+          # colors are the final design colors.
+          Copy-Item mozc4med/assets/icon.svg src/data/images/icon.svg -Force
+          Copy-Item mozc4med/assets/icon.svg src/data/images/icon_base.svg -Force
 
-      - name: Generate red product icons
+      - name: Generate product icons
         shell: pwsh
         run: |
           python mozc4med/tool/generate_icon_from_svg.py `
@@ -137,15 +137,28 @@ jobs:
             --png-out src/data/images/product_icon_32bpp-128.png `
             --png-size 128
 
-      - name: Colorize icons (red)
+      - name: Generate remaining icons (mode / tool icons)
         shell: pwsh
         run: |
-          # product_icon_langbar.ico and product_icon.ico are generated
-          # separately (above) from SVG sources, so they are excluded here
-          # to avoid re-processing them.
-          python mozc4med/tool/colorize_icons.py --verbose `
-            --exclude product_icon_langbar.ico `
-            --exclude product_icon.ico
+          # Regenerate every other .ico under src/data/images/win from the same
+          # mozc4med icon.svg, keeping each file's original resolution layout:
+          # *_a.ico are multi-resolution, the rest (*_NT variants such as
+          # ms_hiragana.ico, tools_icon.ico) are single 16x16 icons.
+          # product_icon.ico / product_icon_langbar.ico were generated above.
+          $done = @('product_icon.ico', 'product_icon_langbar.ico')
+          Get-ChildItem src/data/images/win -Filter *.ico |
+            Where-Object { $done -notcontains $_.Name } |
+            Sort-Object Name |
+            ForEach-Object {
+              if ($_.Name -like '*_a.ico') {
+                python mozc4med/tool/generate_icon_from_svg.py `
+                  --svg mozc4med/assets/icon.svg --out $_.FullName
+              } else {
+                python mozc4med/tool/generate_icon_from_svg.py `
+                  --svg mozc4med/assets/icon.svg --out $_.FullName --sizes 16
+              }
+              if ($LASTEXITCODE -ne 0) { throw "icon generation failed: $($_.Name)" }
+            }
 
       - name: build artifacts
         shell: cmd
@@ -277,18 +290,18 @@ jobs:
           $magickDir = Get-ChildItem "C:\Program Files\ImageMagick-*" -Directory | Select-Object -First 1
           $magickDir.FullName | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
-      - name: Patch icon SVG colors (hue shift)
+      - name: Install mozc4med icon SVGs
         shell: pwsh
         run: |
-          # Recolor the SVG sources in the runner's working copy only -- the
-          # tracked repository files are left untouched. Shifts every color's
-          # hue to red while preserving its saturation/lightness, so
-          # gradients and shading are kept instead of just replacing one
-          # hard-coded orange literal.
-          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon_base.svg --verbose
-          python mozc4med/tool/hue_shift_svg.py --svg src/data/images/icon.svg --verbose
+          # Replace the upstream product icon (icon.svg) and language bar icon
+          # (icon_base.svg) with the single mozc4med original design, in the
+          # runner's working copy only -- the tracked src/ files are left
+          # untouched (never committed). No hue shift is applied: the SVG's
+          # colors are the final design colors.
+          Copy-Item mozc4med/assets/icon.svg src/data/images/icon.svg -Force
+          Copy-Item mozc4med/assets/icon.svg src/data/images/icon_base.svg -Force
 
-      - name: Generate red product icons
+      - name: Generate product icons
         shell: pwsh
         run: |
           python mozc4med/tool/generate_icon_from_svg.py `
@@ -300,15 +313,28 @@ jobs:
             --png-out src/data/images/product_icon_32bpp-128.png `
             --png-size 128
 
-      - name: Colorize icons (red)
+      - name: Generate remaining icons (mode / tool icons)
         shell: pwsh
         run: |
-          # product_icon_langbar.ico and product_icon.ico are generated
-          # separately (above) from SVG sources, so they are excluded here
-          # to avoid re-processing them.
-          python mozc4med/tool/colorize_icons.py --verbose `
-            --exclude product_icon_langbar.ico `
-            --exclude product_icon.ico
+          # Regenerate every other .ico under src/data/images/win from the same
+          # mozc4med icon.svg, keeping each file's original resolution layout:
+          # *_a.ico are multi-resolution, the rest (*_NT variants such as
+          # ms_hiragana.ico, tools_icon.ico) are single 16x16 icons.
+          # product_icon.ico / product_icon_langbar.ico were generated above.
+          $done = @('product_icon.ico', 'product_icon_langbar.ico')
+          Get-ChildItem src/data/images/win -Filter *.ico |
+            Where-Object { $done -notcontains $_.Name } |
+            Sort-Object Name |
+            ForEach-Object {
+              if ($_.Name -like '*_a.ico') {
+                python mozc4med/tool/generate_icon_from_svg.py `
+                  --svg mozc4med/assets/icon.svg --out $_.FullName
+              } else {
+                python mozc4med/tool/generate_icon_from_svg.py `
+                  --svg mozc4med/assets/icon.svg --out $_.FullName --sizes 16
+              }
+              if ($LASTEXITCODE -ne 0) { throw "icon generation failed: $($_.Name)" }
+            }
 
       - name: build artifacts
         shell: cmd

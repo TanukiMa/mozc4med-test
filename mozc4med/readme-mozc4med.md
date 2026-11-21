@@ -39,13 +39,19 @@
   （製品名・会社名・著作権表示）:
   `windows/0004`〜`windows/0007_*_resource_rebranding.patch`
 - Windows 製品アイコン（`.ico`）と About ダイアログ / Unix 側で共有される
-  `product_icon_32bpp-128.png`: `mozc4med/tool/hue_shift_svg.py`
-  （`icon.svg`/`icon_base.svg` の色相を赤へシフト）→
+  `product_icon_32bpp-128.png`: まず独自デザインの `mozc4med/assets/icon.svg`
+  （緑・赤・青の 3 つの円）を CI 作業コピーの `src/data/images/icon.svg`
+  （製品アイコン用）と `src/data/images/icon_base.svg`（言語バー用）の両方に
+  上書きコピー →
   `generate_icon_from_svg.py`（そのSVGから `.ico` を再生成。`--png-out`/`--png-size`
   で同じレンダリングを `product_icon_32bpp-128.png` にも保存 — これが
   `about_dialog.qrc` 経由で About ダイアログのロゴに、`src/unix/build_icons.py`
-  経由で Linux の `mozc.png` になる）→ `colorize_icons.py`（SVG化されていない
-  残りの `.ico` をファジーカラーマッチで着色）。いずれも CI 作業コピーへの
+  経由で Linux の `mozc.png` になる）。`src/data/images/win/` の残りの `.ico`
+  （`ms_*_a.ico` などのモード表示アイコンの大きな変種、`ms_*.ico` / `tools_*.ico`
+  の 16x16）も、元の解像度構成を保ったまま同じ SVG から生成する（`*_a.ico` は
+  8 サイズ、それ以外は `--sizes 16`）。そのため全アイコンが同一デザインになる。
+  `hue_shift_svg.py` / `colorize_icons.py` は現在ワークフローから呼ばれていない。
+  いずれも CI 作業コピーへの
   ビルド時マージ（Track C 相当）で、`.patch` 化していない。
   `windows-mozc4med.yaml` でのみ配線されており、macOS/Linux 向けワークフローの
   アイコンはまだこのパイプラインの対象外（[非目標](#非目標non-goals)参照）

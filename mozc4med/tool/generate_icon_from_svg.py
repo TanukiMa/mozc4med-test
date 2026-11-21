@@ -68,6 +68,16 @@ def pack_ico(pngs: List[str], out_ico: str) -> None:
     run(["magick", *pngs, "-type", "TrueColorAlpha", out_ico])
 
 
+def parse_sizes(value: str) -> tuple:
+    try:
+        sizes = tuple(int(v) for v in value.split(","))
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid --sizes value: {value!r}")
+    if not sizes or any(s <= 0 for s in sizes):
+        raise argparse.ArgumentTypeError(f"invalid --sizes value: {value!r}")
+    return sizes
+
+
 def parse_args(argv: List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--svg", default=DEFAULT_SVG,
@@ -82,8 +92,13 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
              "so it uses the same recolored SVG.")
     parser.add_argument(
         "--png-size", type=int, default=None,
-        help=f"Pixel size for --png-out; must be one of {SIZES} (the sizes "
-             f"already rendered for the .ico)")
+        help="Pixel size for --png-out; must be one of the sizes being "
+             "rendered for the .ico (see --sizes)")
+    parser.add_argument(
+        "--sizes", type=parse_sizes, default=SIZES,
+        help="Comma-separated pixel sizes to pack into the .ico (default: "
+             f"{','.join(str(s) for s in SIZES)}). E.g. --sizes 16 for the "
+             "single-resolution 16x16 icons.")
     return parser.parse_args(argv)
 
 
@@ -98,15 +113,15 @@ def main(argv: List[str]) -> int:
         print("error: --png-out and --png-size must be given together",
               file=sys.stderr)
         return 1
-    if args.png_size is not None and args.png_size not in SIZES:
-        print(f"error: --png-size {args.png_size} is not one of {SIZES}",
+    if args.png_size is not None and args.png_size not in args.sizes:
+        print(f"error: --png-size {args.png_size} is not one of {args.sizes}",
               file=sys.stderr)
         return 1
 
     tmpdir = tempfile.mkdtemp(prefix="svg_icon_")
     try:
         pngs = []
-        for size in SIZES:
+        for size in args.sizes:
             out_png = os.path.join(tmpdir, f"temp_{size}.png")
             render_png(args.svg, size, out_png)
             pngs.append(out_png)
