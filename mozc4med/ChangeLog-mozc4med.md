@@ -4,6 +4,10 @@
 パッチ先頭のヘッダ (`Depends-On` / `Touch-Files` / `Scope`) を参照してください。
 Phase ごとの方針は `readme-mozc4med.md` にあります。
 
+## 2026‑11‑22
+- `windows/0010_windows_clang_version_detection.patch` を追加
+  - rules_cc の上流修正を移植し、Clang 22 以降のバージョン出力から正しい組み込みヘッダーパスを検出
+
 ## 2026‑11‑21
 - Windows用LLVM依存関係を23.1.6に更新するパッチを追加
   - Visual Studio 2026のMSVC標準ライブラリが要求するClang 22以上に対応
