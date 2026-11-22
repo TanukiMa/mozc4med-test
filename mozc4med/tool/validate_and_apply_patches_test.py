@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +48,76 @@ def _extract_named_rule(build_text: str, rule_name: str) -> str:
 
 
 class ValidateAndApplyPatchesTest(unittest.TestCase):
+
+  def test_windows_clang_version_patch(self):
+    git = shutil.which("git")
+    if not git:
+      self.skipTest("git is required for patch-application coverage")
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+      temp_path = Path(temp_dir)
+      for relative_path in (
+          "mozc4med/windows/0010_windows_clang_version_detection.patch",
+          "src/bazel/rules_cc_windows_cc_configure.bzl.patch",
+      ):
+        _copy_into_tempdir(temp_path, relative_path)
+      outer_patch = "mozc4med/windows/0010_windows_clang_version_detection.patch"
+      subprocess.run([git, "apply", "--check", outer_patch], cwd=temp_path, check=True)
+      subprocess.run([git, "apply", outer_patch], cwd=temp_path, check=True)
+
+      source = temp_path / "cc/private/toolchain/windows_cc_configure.bzl"
+      source.parent.mkdir(parents=True)
+      source.write_text('''\
+def _get_clang_version(repository_ctx, clang_cl):
+    result = repository_ctx.execute([clang_cl, "-v"])
+    first_line = result.stderr.strip().splitlines()[0].strip()
+
+    # The first line of stderr should look like "[vendor ]clang version X.X.X"
+    if result.return_code != 0 or first_line.find("clang version ") == -1:
+        auto_configure_fail("Failed to get clang version by running \\"%s -v\\"" % clang_cl)
+    return first_line.split(" ")[-1]
+
+def _get_clang_dir(repository_ctx, llvm_path, clang_version):
+    """Get the clang installation directory."""
+
+def configure_windows_toolchain(repository_ctx):
+
+    template_vars = dict()
+    msvc_vars_x64 = _get_msvc_vars(repository_ctx, paths, "x64")
+    template_vars.update(msvc_vars_x64)
+    template_vars.update(_get_clang_cl_vars(repository_ctx, paths, msvc_vars_x64, "x64"))
+    template_vars.update(_get_msys_mingw_vars(repository_ctx))
+    template_vars.update(_get_copts(repository_ctx))
+    template_vars.update(_get_msvc_vars(repository_ctx, paths, "x86", msvc_vars_x64))
+    template_vars.update(_get_msvc_vars(repository_ctx, paths, "arm", msvc_vars_x64))
+    msvc_vars_arm64 = _get_msvc_vars(repository_ctx, paths, "arm64", msvc_vars_x64)
+    template_vars.update(msvc_vars_arm64)
+''', encoding="utf-8")
+      inner_patch = "src/bazel/rules_cc_windows_cc_configure.bzl.patch"
+      subprocess.run([git, "apply", "-p0", "--check", inner_patch], cwd=temp_path, check=True)
+      subprocess.run([git, "apply", "-p0", inner_patch], cwd=temp_path, check=True)
+
+      def fail(message):
+        raise ValueError(message)
+
+      namespace = {"auto_configure_fail": fail}
+      version_function = source.read_text(encoding="utf-8").split("def _get_clang_dir")[0]
+      exec(version_function, namespace)
+      get_version = namespace["_get_clang_version"]
+      for output, expected in (
+          ("clang version 20.1.1", "20.1.1"),
+          ("clang version 23.1.6 (https://github.com/llvm/llvm-project abc123)", "23.1.6"),
+          ("vendor clang version 23.1.6 (vendor build)", "23.1.6"),
+      ):
+        with self.subTest(output=output):
+          ctx = SimpleNamespace(execute=lambda args: SimpleNamespace(stderr=output, return_code=0))
+          self.assertEqual(get_version(ctx, "clang-cl.exe"), expected)
+      ctx = SimpleNamespace(execute=lambda args: SimpleNamespace(stderr="unknown compiler", return_code=0))
+      with self.assertRaises(ValueError):
+        get_version(ctx, "clang-cl.exe")
+      ctx = SimpleNamespace(execute=lambda args: SimpleNamespace(stderr="clang version 23.1.6", return_code=1))
+      with self.assertRaises(ValueError):
+        get_version(ctx, "clang-cl.exe")
 
   def test_common_dictionary_patch_wires_raw_mozc4med_tsv_once(self):
     git = shutil.which("git")
