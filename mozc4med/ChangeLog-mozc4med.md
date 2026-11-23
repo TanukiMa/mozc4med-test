@@ -21,8 +21,9 @@ Phase ごとの方針は `readme-mozc4med.md` にあります。
   - 残りの `src/data/images/win/*.ico` は `tool/generate_win_mode_icons.py` で生成
     (`*_a.ico` は 8 サイズ、それ以外は 16x16 のみ)
     - 入力モード表示 (`ms_hiragana` / `ms_katakana` / `ms_katakana_half` / `ms_alpha` /
-      `ms_alpha_half` / `ms_direct_input`): 上流の `ms_*.svg` の文字を三つの円に重ねる
-      (24px 以下は文字を全面に出し、円を薄くする)
+      `ms_alpha_half` / `ms_direct_input`): 三つの円とは重ねず、上流の `ms_*.svg` の文字だけを
+      白い文字・黒い縁取り・透過背景で描く (どの色のツールバーでもモードが読めるように)。
+      縁取りは白い文字の形を 1px 以上膨らませて作る (上流の細い半透明の輪郭は 16〜24px でぼやけるため)
     - `ms_disabled*`: 円をグレーにしたもの
     - `tools_*`: 上流に文字 SVG がないため円のみ
   - `tool/generate_icon_from_svg.py` に `--sizes` オプションを追加 (テストも追加)

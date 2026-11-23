@@ -50,10 +50,12 @@
   `generate_win_mode_icons.py` が、元の解像度構成（`*_a.ico` は 8 サイズ、それ以外は
   16x16）を保ったまま生成する:
   入力モード表示（`ms_hiragana` / `ms_katakana` / `ms_katakana_half` /
-  `ms_alpha` / `ms_alpha_half` / `ms_direct_input`）は同じ三つの円に、
-  上流の `ms_*.svg` の文字（あ・ア・ｱ・A・_A など）を重ねる（24px 以下は文字を
-  全面に出し円を薄くする）。`ms_disabled*` は円をグレーにしたもの、`tools_*`
-  （上流に文字 SVG がない）は円のみ。
+  `ms_alpha` / `ms_alpha_half` / `ms_direct_input`）は三つの円とは重ねず、
+  上流の `ms_*.svg` の文字（あ・ア・ｱ・A・_A など）だけを「白い文字・黒い縁取り・
+  透過背景」で描く（ツールバーがどんな色でもモードが読めるようにするため。
+  黒い縁取りは、上流の細い半透明の輪郭線をそのまま使うと 16〜24px でぼやけるため、
+  白い文字の形を 1px 以上（サイズ比例）膨らませて作る）。`ms_disabled*` は三つの円を
+  グレーにしたもの、`tools_*`（上流に文字 SVG がない）は円のみ。
   `hue_shift_svg.py` / `colorize_icons.py` は現在ワークフローから呼ばれていない。
   いずれも CI 作業コピーへの
   ビルド時マージ（Track C 相当）で、`.patch` 化していない。

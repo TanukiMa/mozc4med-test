@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
-"""Regenerate the Windows mode/tool .ico files from the mozc4med icon design.
+"""Regenerate the Windows mode/tool .ico files from SVG sources.
 
-Replaces the previous "same icon for every .ico" step, which made the
-language bar's input-mode indicators (hiragana, katakana, direct input, ...)
-indistinguishable. Per file under src/data/images/win/:
+Per file under src/data/images/win/:
 
   * ms_hiragana / ms_katakana / ms_katakana_half / ms_alpha / ms_alpha_half /
-    ms_direct_input (+ their `_a` variants): the mozc4med base design
-    (mozc4med/assets/icon.svg) with the upstream mode glyph overlaid. The
-    glyph is taken from the upstream ms_<mode>.svg next to the .ico files
-    (white glyph with a dark outline), so no glyph artwork is duplicated here.
-  * ms_disabled / ms_disabled_a: the base design in grayscale.
-  * everything else (tools_*.ico): the plain base design. Upstream has no
+    ms_direct_input (+ their `_a` variants): the upstream mode glyph
+    (ms_<mode>.svg next to the .ico files) on its own -- a white glyph with a
+    solid black outline on a transparent background. These are NOT drawn over
+    the mozc4med icon: the language bar can sit on any color, so the glyph has
+    to be readable by itself (white fill + black border works on light and
+    dark bars alike). Only the glyph's white shape is taken from upstream; the
+    black border is synthesized by dilating that shape by a whole number of
+    pixels (>= 1) at every size, instead of rasterizing upstream's hairline
+    (0.4px at 16px, 75% black) outline, which blurs to gray at 16-24px.
+  * ms_disabled / ms_disabled_a: the mozc4med icon (mozc4med/assets/icon.svg)
+    in grayscale.
+  * everything else (tools_*.ico): the plain mozc4med icon. Upstream has no
     glyph SVG for these.
 
 `*_a.ico` keep their multi-resolution layout (SIZES); the other files stay
@@ -37,7 +41,7 @@ import re
 import shutil
 import sys
 import tempfile
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 try:
     from mozc4med.tool import generate_icon_from_svg as gen
@@ -60,19 +64,18 @@ GLYPH_SVGS = {
 }
 DISABLED_STEM = "ms_disabled"
 
-# Glyph placement inside the 1024x1024 base design. Upstream glyph SVGs are
-# 16x16 with no viewBox.
-#   large sizes: glyph inset so the full-strength circles stay visible around it.
-#   small sizes (<= SMALL_MAX_SIZE px): glyph fills the icon and the circles are
-#   faded, because a thin outlined glyph over saturated colors turns to mush
-#   at 16-24px.
-GLYPH_BOX_LARGE = (102, 102, 820)  # x, y, width/height
-GLYPH_BOX_SMALL = (0, 0, 1024)
-SMALL_CIRCLE_OPACITY = 0.35
-SMALL_MAX_SIZE = 24
+# Upstream glyph SVGs are 16x16 with no viewBox; the silhouette is rescaled to
+# this size so ImageMagick rasterizes it at high resolution before downsizing.
+RENDER_SIZE = 1024
 GLYPH_VIEWBOX = "0 0 16 16"
+# Border thickness in pixels = max(1, round(size * BORDER_RATIO)): 1px up to
+# 79px icons, 2px at 128px, 3px at 256px.
+BORDER_RATIO = 0.0125
 
 _HEX = re.compile(r"#([0-9a-fA-F]{6})\b")
+_NON_DRAWING = re.compile(r"<(mask|defs)\b.*?</\1>", re.DOTALL)
+_PATH = re.compile(r"<path\b[^>]*/>")
+_WHITE_FILL = re.compile(r'\bfill="#fff(?:fff)?"', re.IGNORECASE)
 
 
 def split_name(ico_name: str) -> Tuple[str, bool]:
@@ -105,46 +108,67 @@ def gray_svg(base_svg: str) -> str:
     return _HEX.sub(_gray_hex, base_svg)
 
 
-def glyph_inner(glyph_svg: str) -> str:
-    """Inner markup of the glyph SVG, with an explicit fill on every path.
+def glyph_silhouette_svg(glyph_svg: str) -> str:
+    """The glyph's white shape only, scaled up to RENDER_SIZE.
 
-    The upstream root carries fill="none" and some outline paths rely on
-    inheriting it; ImageMagick's renderer does not inherit it through a nested
-    <svg>, so those paths would otherwise be painted solid black.
+    Upstream glyph SVGs draw one white <path> (the glyph) plus a black outline
+    <path>, and carry <mask>/<defs> helper shapes that include white paths of
+    their own (a clip square, a mask); only the drawn white glyph path is
+    kept.
     """
-    m = re.search(r"<svg\b[^>]*>(.*)</svg>", glyph_svg, re.DOTALL)
-    if not m:
+    if "<svg" not in glyph_svg or "</svg>" not in glyph_svg:
         raise ValueError("glyph SVG has no <svg> root")
-    return re.sub(r"<path(?![^>]*\bfill=)", '<path fill="none"', m.group(1))
-
-
-def overlay_glyph(base_svg: str, glyph_svg: str, small: bool = False) -> str:
-    """Return base_svg with the glyph nested on top (before the closing tag)."""
-    if "</svg>" not in base_svg:
-        raise ValueError("base SVG has no closing </svg>")
-    if small:
-        x, y, size = GLYPH_BOX_SMALL
-        base_svg = base_svg.replace(
-            "<circle ", f'<circle opacity="{SMALL_CIRCLE_OPACITY}" ')
-    else:
-        x, y, size = GLYPH_BOX_LARGE
-    nested = (
-        f'<svg x="{x}" y="{y}" width="{size}" height="{size}" '
-        f'viewBox="{GLYPH_VIEWBOX}" fill="none">{glyph_inner(glyph_svg)}</svg>\n'
+    drawn = _NON_DRAWING.sub("", glyph_svg)
+    paths = [p for p in _PATH.findall(drawn) if _WHITE_FILL.search(p)]
+    if len(paths) != 1:
+        raise ValueError(
+            f"expected exactly one white glyph path, found {len(paths)}")
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{RENDER_SIZE}" '
+        f'height="{RENDER_SIZE}" viewBox="{GLYPH_VIEWBOX}" fill="none">'
+        f"{paths[0]}</svg>\n"
     )
-    idx = base_svg.rfind("</svg>")
-    return base_svg[:idx] + nested + base_svg[idx:]
 
 
-def build_variant_svg(variant: str, base_svg: str, win_dir: str,
-                      small: bool = False) -> str:
+def border_px(size: int) -> int:
+    return max(1, round(size * BORDER_RATIO))
+
+
+def render_glyph_png(svg: str, size: int, out_png: str) -> None:
+    """White glyph with a black border of whole pixels, on transparency.
+
+    The silhouette is drawn `border` px smaller than the icon on every side,
+    then a copy dilated by `border` px and painted black is placed underneath.
+    """
+    border = border_px(size)
+    inner = size - 2 * border
+    gen.run([
+        "magick",
+        "-background", "none",
+        "-density", str(gen.DENSITY),
+        svg,
+        "-resize", f"{inner}x{inner}",
+        "-alpha", "on",
+        "-gravity", "center",
+        "-extent", f"{size}x{size}",
+        "(", "+clone",
+        "-morphology", "Dilate", f"Disk:{border + 0.5}",
+        "-channel", "RGB", "-evaluate", "set", "0", "+channel",
+        ")",
+        "+swap", "-composite",
+        "-depth", "8",
+        out_png,
+    ])
+
+
+def build_variant_svg(variant: str, base_svg: str, win_dir: str) -> str:
     if variant == "plain":
         return base_svg
     if variant == "disabled":
         return gray_svg(base_svg)
     glyph_path = os.path.join(win_dir, GLYPH_SVGS[variant])
     with open(glyph_path, encoding="utf-8") as f:
-        return overlay_glyph(base_svg, f.read(), small=small)
+        return glyph_silhouette_svg(f.read())
 
 
 def plan(ico_names: List[str]) -> Dict[str, List[Tuple[str, Tuple[int, ...]]]]:
@@ -184,26 +208,20 @@ def main(argv: List[str]) -> int:
     tmpdir = tempfile.mkdtemp(prefix="win_mode_icons_")
     try:
         for variant, targets in sorted(groups.items()):
-            # One SVG per layout (small sizes fade the circles); plain and
-            # disabled variants are identical in both.
-            svg_paths: Dict[bool, str] = {}
-            for small in (False, True):
-                layout = "small" if small else "large"
-                svg_path = os.path.join(tmpdir, f"{variant}_{layout}.svg")
-                try:
-                    svg_text = build_variant_svg(variant, base_svg, args.dir, small)
-                except (OSError, ValueError) as e:
-                    print(f"error: cannot build variant {variant!r}: {e}",
-                          file=sys.stderr)
-                    return 1
-                with open(svg_path, "w", encoding="utf-8", newline="\n") as f:
-                    f.write(svg_text)
-                svg_paths[small] = svg_path
+            svg_path = os.path.join(tmpdir, f"{variant}.svg")
+            try:
+                svg_text = build_variant_svg(variant, base_svg, args.dir)
+            except (OSError, ValueError) as e:
+                print(f"error: cannot build variant {variant!r}: {e}", file=sys.stderr)
+                return 1
+            with open(svg_path, "w", encoding="utf-8", newline="\n") as f:
+                f.write(svg_text)
 
+            render = render_glyph_png if variant in GLYPH_SVGS else gen.render_png
             rendered: Dict[int, str] = {}
             for size in sorted({s for _, sizes in targets for s in sizes}):
                 png = os.path.join(tmpdir, f"{variant}_{size}.png")
-                gen.render_png(svg_paths[size <= SMALL_MAX_SIZE], size, png)
+                render(svg_path, size, png)
                 rendered[size] = png
 
             for name, sizes in targets:

@@ -14,9 +14,16 @@ BASE_SVG = (
     '  <circle cx="2" cy="2" r="1" fill="#ff0000"/>\n'
     '</svg>\n'
 )
+# Mirrors the structure of upstream ms_hiragana.svg: a clip square and a mask
+# (both with white paths of their own), the drawn white glyph, and the outline.
 GLYPH_SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none">'
-    '<path fill="#fff" d="M0 0h1z"/><path stroke="#000" d="M0 0h2z"/></svg>'
+    '<g clip-path="url(#a)">'
+    '<mask id="b" width="13" height="13" fill="#000"><path fill="#fff" d="M0 0h13v13H0z"/></mask>'
+    '<path fill="#fff" fill-rule="evenodd" d="M1 1h2z" clip-rule="evenodd"/>'
+    '<path fill="#000" fill-opacity=".75" d="M0 0h2z" mask="url(#b)"/>'
+    '</g>'
+    '<defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>'
 )
 
 
@@ -61,38 +68,61 @@ class GenerateWinModeIconsTest(unittest.TestCase):
       self.assertEqual(hex6[0:2], hex6[2:4])
       self.assertEqual(hex6[2:4], hex6[4:6])
 
-  def test_glyph_inner_adds_explicit_fill_only_where_missing(self):
-    inner = g.glyph_inner(GLYPH_SVG)
-    self.assertIn('<path fill="#fff" d="M0 0h1z"/>', inner)
-    self.assertIn('<path fill="none" stroke="#000" d="M0 0h2z"/>', inner)
-
-  def test_glyph_inner_without_svg_root_is_an_error(self):
-    with self.assertRaises(ValueError):
-      g.glyph_inner("<g/>")
-
-  def test_overlay_large_keeps_circles_opaque_and_insets_glyph(self):
-    out = g.overlay_glyph(BASE_SVG, GLYPH_SVG, small=False)
+  def test_glyph_silhouette_keeps_only_the_drawn_white_glyph_path(self):
+    out = g.glyph_silhouette_svg(GLYPH_SVG)
+    self.assertEqual(out.count("<path"), 1)
+    self.assertIn('d="M1 1h2z"', out)
+    # Not the clip square / mask paths, and not the black outline.
+    self.assertNotIn("M0 0h13v13H0z", out)
+    self.assertNotIn("M0 0h16v16H0z", out)
+    self.assertNotIn("#000", out)
     self.assertNotIn("opacity", out)
-    self.assertIn('x="102" y="102" width="820" height="820"', out)
+
+  def test_glyph_silhouette_is_rescaled_and_has_no_base_design(self):
+    out = g.glyph_silhouette_svg(GLYPH_SVG)
+    self.assertIn(f'width="{g.RENDER_SIZE}" height="{g.RENDER_SIZE}"', out)
+    self.assertIn('viewBox="0 0 16 16"', out)
+    self.assertNotIn("<circle", out)
+    self.assertEqual(out.count("<svg"), 1)
     self.assertTrue(out.rstrip().endswith("</svg>"))
-    # The glyph is drawn after (on top of) the circles.
-    self.assertLess(out.rfind("<circle"), out.find('viewBox="0 0 16 16"'))
 
-  def test_overlay_small_fades_circles_and_fills_icon(self):
-    out = g.overlay_glyph(BASE_SVG, GLYPH_SVG, small=True)
-    self.assertEqual(out.count(f'opacity="{g.SMALL_CIRCLE_OPACITY}"'), 2)
-    self.assertIn('x="0" y="0" width="1024" height="1024"', out)
-
-  def test_overlay_without_closing_tag_is_an_error(self):
+  def test_glyph_silhouette_without_svg_root_is_an_error(self):
     with self.assertRaises(ValueError):
-      g.overlay_glyph("<svg>", GLYPH_SVG)
+      g.glyph_silhouette_svg("<g/>")
 
-  def test_build_variant_svg_plain_and_disabled_ignore_layout(self):
-    for small in (False, True):
-      self.assertEqual(g.build_variant_svg("plain", BASE_SVG, ".", small), BASE_SVG)
-      self.assertEqual(
-          g.build_variant_svg("disabled", BASE_SVG, ".", small),
-          g.gray_svg(BASE_SVG))
+  def test_glyph_silhouette_without_exactly_one_white_path_is_an_error(self):
+    with self.assertRaises(ValueError):
+      g.glyph_silhouette_svg('<svg><path fill="#000" d="M0 0z"/></svg>')
+    with self.assertRaises(ValueError):
+      g.glyph_silhouette_svg(
+          '<svg><path fill="#fff" d="M0 0z"/><path fill="#fff" d="M1 1z"/></svg>')
+
+  def test_border_px_is_at_least_one_and_grows_with_size(self):
+    self.assertEqual([g.border_px(s) for s in (16, 24, 32, 48, 64)], [1] * 5)
+    self.assertEqual(g.border_px(128), 2)
+    self.assertEqual(g.border_px(256), 3)
+
+  def test_render_glyph_png_draws_glyph_inset_by_the_border(self):
+    with mock.patch.object(g.gen, "run") as run:
+      g.render_glyph_png("in.svg", 16, "out.png")
+    cmd = run.call_args[0][0]
+    self.assertEqual(cmd[cmd.index("-resize") + 1], "14x14")  # 16 - 2*1px
+    self.assertEqual(cmd[cmd.index("-extent") + 1], "16x16")
+    self.assertIn("Dilate", cmd)
+    self.assertEqual(cmd[cmd.index("Dilate") + 1], "Disk:1.5")
+    self.assertEqual(cmd[-1], "out.png")
+
+  def test_build_variant_svg_glyph_does_not_use_base_design(self):
+    with tempfile.TemporaryDirectory() as temp_dir:
+      (Path(temp_dir) / "ms_hiragana.svg").write_text(GLYPH_SVG, encoding="utf-8")
+      out = g.build_variant_svg("ms_hiragana", BASE_SVG, temp_dir)
+    self.assertNotIn("<circle", out)
+    self.assertNotIn("#006633", out)
+
+  def test_build_variant_svg_plain_and_disabled(self):
+    self.assertEqual(g.build_variant_svg("plain", BASE_SVG, "."), BASE_SVG)
+    self.assertEqual(
+        g.build_variant_svg("disabled", BASE_SVG, "."), g.gray_svg(BASE_SVG))
 
   def test_main_renders_each_variant_once_per_size_and_packs_every_ico(self):
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -108,13 +138,15 @@ class GenerateWinModeIconsTest(unittest.TestCase):
         Path(out_png).write_text(f"{Path(svg).name}:{size}", encoding="utf-8")
 
       with mock.patch.object(g.gen, "render_png", side_effect=fake_render) as render, \
+           mock.patch.object(g, "render_glyph_png", side_effect=fake_render) as glyph, \
            mock.patch.object(g.gen, "pack_ico") as pack:
         rc = g.main(["--dir", str(win), "--base-svg", str(base)])
 
       self.assertEqual(rc, 0)
-      # ms_hiragana: 8 sizes (shared by the 16px-only and multi-size ico);
-      # plain (tools_icon.ico only, 16px): 1 render.
-      self.assertEqual(render.call_count, len(generate_icon_from_svg.SIZES) + 1)
+      # ms_hiragana (glyph renderer): 8 sizes shared by the 16px-only and
+      # multi-size ico; plain (tools_icon.ico only, 16px): 1 plain render.
+      self.assertEqual(glyph.call_count, len(generate_icon_from_svg.SIZES))
+      self.assertEqual(render.call_count, 1)
       self.assertEqual(pack.call_count, 3)
       packed_outs = sorted(Path(c[0][1]).name for c in pack.call_args_list)
       self.assertEqual(
@@ -129,6 +161,7 @@ class GenerateWinModeIconsTest(unittest.TestCase):
       base.write_text(BASE_SVG, encoding="utf-8")
 
       with mock.patch.object(g.gen, "render_png"), \
+           mock.patch.object(g, "render_glyph_png"), \
            mock.patch.object(g.gen, "pack_ico"):
         rc = g.main(["--dir", str(win), "--base-svg", str(base)])
 
